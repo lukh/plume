@@ -83,6 +83,7 @@ Since everything is tagged, it will not break projects if a Shared File is modif
 
 Using a standard svn layout, with my very limited knowledge (yet) of SVN, the repositories should look like.
 
+```
 .
 └── /
     ├── __shared__
@@ -155,7 +156,7 @@ Using a standard svn layout, with my very limited knowledge (yet) of SVN, the re
         │       ├── LocalPart3.FCStd
         │       └── LocalPart4.FCStd
         └── branches
-
+```
 
 Projects follows the svn convention. But common parts doesn't really, since they could be used by other projects.
 They must keep tracks of all of their versions, accessible to all the others projects.
