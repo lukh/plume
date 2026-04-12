@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+
+  <name>Plume</name>
+  <description>Plume is intend to help FreeCAD users to manage their libraries and projects, with the help of SVN and Inventree</description>
+  <tag>project management</tag>
+  <tag>versionning</tag>
+  <tag>version control</tag>
+  <tag>pdm</tag>
+  <tag>plm</tag>
+  <tag>inventree</tag>
+  <tag>svn</tag>
+  <version>0.0.0</version>
+  <date>2026-03-12</date>
+  <maintainer email="vivien.henry@inductivebrain.fr">Vivien Henry</maintainer>
+  <license file="LICENSE">LGPL-3.0-only</license>
+  <url type="repository" branch="main">https://github.com/lukh/plume</url> 
+  <url branch="main" type="repository">https://github.com/lukh/plume.git</url>
+  <url type="readme">https://github.com/lukh/plume/blob/main/README.md</url>
+  <icon>freecad/frameforge/resources/icons/plume.svg</icon>
+
+  <freecadmin>1.1.0</freecadmin>
+
+  <content>
+    <workbench>
+      <classname>Plume</classname>
+      <subdirectory>freecad/plume</subdirectory>
+    </workbench>
+  </content>
+
+</package>
