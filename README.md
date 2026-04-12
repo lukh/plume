@@ -86,7 +86,7 @@ Using a standard svn layout, with my very limited knowledge (yet) of SVN, the re
 ```
 .
 └── /
-    ├── __shared__
+    ├── libraries
     │   ├── trunk
     │   │   ├── SharedPart1.FCStd
     │   │   ├── SharedPart2.FCStd
@@ -118,44 +118,45 @@ Using a standard svn layout, with my very limited knowledge (yet) of SVN, the re
     │           └── SharedPart5
     │               └── 1.0
     │                   └── SharedPart5.FCStd
-    ├── project-A
-    │   ├── trunk
-    │   │   ├── Assembly.FCStd
-    │   │   ├── LocalPart1.FCStd
-    │   │   ├── LocalPart2.FCStd
-    │   │   ├── LocalPart3.FCStd
-    │   │   ├── LocalPart4.FCStd
-    │   │   └── LocalPart5.FCStd
-    │   ├── tags
-    │   │   ├── 1.0
-    │   │   │   ├── Assembly.FCStd
-    │   │   │   ├── LocalPart1.FCStd
-    │   │   │   ├── LocalPart2.FCStd
-    │   │   │   ├── LocalPart3.FCStd
-    │   │   │   └── LocalPart4.FCStd
-    │   │   └── 2.0
-    │   │       ├── Assembly.FCStd
-    │   │       ├── LocalPart1.FCStd
-    │   │       ├── LocalPart2.FCStd
-    │   │       ├── LocalPart3.FCStd
-    │   │       ├── LocalPart4.FCStd
-    │   │       └── LocalPart5.FCStd
-    │   └── branches
-    └── project-B
-        ├── trunk
-        │   ├── Assembly.FCStd
-        │   ├── LocalPart1.FCStd
-        │   ├── LocalPart2.FCStd
-        │   ├── LocalPart3.FCStd
-        │   └── LocalPart4.FCStd
-        ├── tags
-        │   └── 1.0
-        │       ├── Assembly.FCStd
-        │       ├── LocalPart1.FCStd
-        │       ├── LocalPart2.FCStd
-        │       ├── LocalPart3.FCStd
-        │       └── LocalPart4.FCStd
-        └── branches
+    └── projects
+        ├── project-A
+        │   ├── trunk
+        │   │   ├── Assembly.FCStd
+        │   │   ├── LocalPart1.FCStd
+        │   │   ├── LocalPart2.FCStd
+        │   │   ├── LocalPart3.FCStd
+        │   │   ├── LocalPart4.FCStd
+        │   │   └── LocalPart5.FCStd
+        │   ├── tags
+        │   │   ├── 1.0
+        │   │   │   ├── Assembly.FCStd
+        │   │   │   ├── LocalPart1.FCStd
+        │   │   │   ├── LocalPart2.FCStd
+        │   │   │   ├── LocalPart3.FCStd
+        │   │   │   └── LocalPart4.FCStd
+        │   │   └── 2.0
+        │   │       ├── Assembly.FCStd
+        │   │       ├── LocalPart1.FCStd
+        │   │       ├── LocalPart2.FCStd
+        │   │       ├── LocalPart3.FCStd
+        │   │       ├── LocalPart4.FCStd
+        │   │       └── LocalPart5.FCStd
+        │   └── branches
+        └── project-B
+            ├── trunk
+            │   ├── Assembly.FCStd
+            │   ├── LocalPart1.FCStd
+            │   ├── LocalPart2.FCStd
+            │   ├── LocalPart3.FCStd
+            │   └── LocalPart4.FCStd
+            ├── tags
+            │   └── 1.0
+            │       ├── Assembly.FCStd
+            │       ├── LocalPart1.FCStd
+            │       ├── LocalPart2.FCStd
+            │       ├── LocalPart3.FCStd
+            │       └── LocalPart4.FCStd
+            └── branches
 ```
 
 Projects follows the svn convention. But common parts doesn't really, since they could be used by other projects.

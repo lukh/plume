@@ -17,7 +17,7 @@
   <url type="repository" branch="main">https://github.com/lukh/plume</url> 
   <url branch="main" type="repository">https://github.com/lukh/plume.git</url>
   <url type="readme">https://github.com/lukh/plume/blob/main/README.md</url>
-  <icon>freecad/frameforge/resources/icons/plume.svg</icon>
+  <icon>freecad/plume/resources/icons/plume.svg</icon>
 
   <freecadmin>1.1.0</freecadmin>
 
