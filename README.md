@@ -173,6 +173,7 @@ List of Property: (in the Plume Group)
 - Type : List [Part, (Fastener), ManufacturedPart, Assembly]
   - a Part is bought from a distributor (a screw, a nut, a bearing, etc..) 
   - a ManufacturedPart needs steps to build : 3D Prints, CNC, Metal Work, WoodWork, etc..)
+    - It could need "Material", ie plastic, Profiles, etc...
   - an Assembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
   - a Fastener (from Fastener Workbench) is linked to a Inventree Part, it is a Part but I think multiples objects should be able to exists into multiples Assemblies,
     - It will just tells the UUID to the BOM generator... ?
@@ -191,7 +192,8 @@ List of Property: (in the Plume Group)
 
 1. Repository Management
    1. Connect to a repository
-   2. Update
+   2. Update/Checkout
+   3. 
    
 2. Project Management
    1. Lock/Unlock Project (All files related to the project (current file))
