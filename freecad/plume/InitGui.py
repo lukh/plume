@@ -3,7 +3,7 @@ import os
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from freecad.plume.pl_tools import TRANSLATIONSPATH, translate
+from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 
 # Add translations path
 Gui.addLanguagePath(TRANSLATIONSPATH)
@@ -131,7 +131,7 @@ class Plume(Gui.Workbench):
     """
 
     toolbox_repository = [
-        "Plume_Connect",
+        # "Plume_Connect",
         "Plume_Update",
         "Plume_Lock",
         "Plume_Unlock",
@@ -167,7 +167,10 @@ class Plume(Gui.Workbench):
         This function is called at the first activation of the workbench.
         here is the place to import all the commands
         """
-        pass
+        from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
+        
+        Gui.addIconPath(ICONPATH)
+        Gui.addPreferencePage(os.path.join(UIPATH, "preferences.ui"),"Plume")
         # from freecad.plume import (
         #     utilities,
         # )
