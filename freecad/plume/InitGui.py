@@ -133,6 +133,7 @@ class Plume(Gui.Workbench):
     toolbox_repository = [
         # "Plume_Connect",
         "Plume_Update",
+        "Plume_Commit",
         "Plume_Lock",
         "Plume_Unlock",
         "Plume_BrowseRepository"
@@ -140,22 +141,19 @@ class Plume(Gui.Workbench):
 
     toolbox_project = [
         "Plume_CreateNewProject",
-        "Plume_CommitFile",
-        "Plume_CommitProject",
         "Plume_CheckProject",
         "Plume_ReleaseProject",
     ]
 
     toolbox_libraries = [
-        "Plume_CreateNewLibrary",
-        "Plume_CommitLibrary",
+        # "Plume_CreateNewLibrary",
         "Plume_CheckLibrary",
         "Plume_ReleaseLibrary",
     ]
 
     toolbox_object = [
         "Plume_InitializeObject"
-        "Plume_UpdateLinkToRelease"
+        "Plume_UpdateLinkToVersion"
     ]
 
 
@@ -168,7 +166,8 @@ class Plume(Gui.Workbench):
         here is the place to import all the commands
         """
         from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-        
+        from freecad.plume.tools import Repository
+
         Gui.addIconPath(ICONPATH)
         Gui.addPreferencePage(os.path.join(UIPATH, "preferences.ui"),"Plume")
         # from freecad.plume import (
@@ -176,8 +175,8 @@ class Plume(Gui.Workbench):
         # )
         # from freecad.plume.pl_tools import translate
 
-        # self.appendToolbar(translate("frameforge", "Drawing Primitives"), self.toolbox_drawing)
-        # self.appendMenu(translate("frameforge", "Drawing Primitives"), self.toolbox_drawing)
+        self.appendToolbar(translate("plume", "Repository"), self.toolbox_repository)
+        self.appendMenu(translate("plume", "Repository"), self.toolbox_repository)
 
     def Activated(self):
         """
