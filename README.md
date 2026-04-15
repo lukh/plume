@@ -13,7 +13,8 @@ Several open source projects exists already;
 - NanoPLM
 - Taack https://github.com/Taack/taack-plm-freecad
 - EasyPDM
-- 
+- FreePLM
+  
 I need to dive into into it.
 
 ## Preliminars Ideas:
@@ -86,6 +87,7 @@ Using a standard svn layout, with my very limited knowledge (yet) of SVN, the re
 ```
 .
 └── /
+    ├── plume.yml
     ├── libraries
     │   ├── trunk
     │   │   ├── SharedPart1.FCStd
@@ -162,27 +164,63 @@ Using a standard svn layout, with my very limited knowledge (yet) of SVN, the re
 Projects follows the svn convention. But common parts doesn't really, since they could be used by other projects.
 They must keep tracks of all of their versions, accessible to all the others projects.
 
+
+
+The repository would probably belongs to an organisation, with their own specifications.
+
+To handle that, and specifics "attributes", a plume.yml file exists at the root of the repo:
+
+```YAML
+
+- stage_before_release: true
+- include_short_fcinfo_in_commit: true
+
+- library_folder: libraries
+- projects_folder: projects
+
+- UUID: inventree|local
+- version: number|letter
+- revision: number|letter
+
+- extra_items_attributes:
+    - name: type
+    - name: type
+    - name: type
+    - name: type
+
+```
+
 ## Plume Property for any objects:
 
 Plume will add specific data (Properties) to objects.
 
 List of Property: (in the Plume Group)
 
+Item Related
 - UUID : uuid / or InventreeID
-- Version : String in the form of x.y (will name the tag)
-- Revision (Subversion): the related number to the commit 
-- Type : List [Part, (Fastener), ManufacturedPart, Assembly]
-  - a Part is bought from a distributor (a screw, a nut, a bearing, etc..) 
-  - a ManufacturedPart needs steps to build : 3D Prints, CNC, Metal Work, WoodWork, etc..)
-    - It could need "Material", ie plastic, Profiles, etc...
+- Version : Number or string (ro)
+- Revision : Number or string (ro)
+- Type : List [MechanicalPart, MechanicalAssembly, OtherItem]
+
   - an Assembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
-  - a Fastener (from Fastener Workbench) is linked to a Inventree Part, it is a Part but I think multiples objects should be able to exists into multiples Assemblies,
+  - a Fastener (from Fastener Workbench) 
+- Reference: an internal reference (BAD IDEA HERE should be in inventree !)
+- Obsolete: Bool (should also be in inventree)
+- Manufactured: Bool, if False, the object is bought
+  - a BoughtPart is bought from a distributor (a screw, a nut, a bearing, etc..) 
+    - is linked to a Inventree Part, it is a Part but I think multiples objects should be able to exists into multiples Assemblies,
     - It will just tells the UUID to the BOM generator... ?
     - No outputs ?
-    - No revision / Version ?
+    - No revision / Version ? (bad idea, one could buy complicated stuff from manufacturer that have rev/ver)
     - Fasteners can be managed as SharedPart... ???? (and in the SharedFasteners.FCStd, they are handle as Part, that way they are managed by inventree, but it is not mandatory)
-- Reference: an internal reference
+    - If Manufactured is "False", there is no output 
+        - > there should be no problem to have several freecad object referencing to the UUID....
+        - > When creating a Non manufacturing part, either you select an existing UUID or Creating a new one (via a new release)
+        - > A ManufacturedPart MUST be unique
+  - a ManufacturedPart needs steps to build : 3D Prints, CNC, Metal Work, WoodWork, etc..)
+    - It could need "Material", ie plastic, Profiles, etc...
 
+DocumentsGenerators
 - ExportedTechDrawPages: the list of related techdraw pages to export
 - ExportedCNCJobs: the list of related techdraw pages to export (for ManufacturedPart)
 - ExportedDXFs: the list of (techdrawpage) exported as DXF for manufacturing (for ManufacturedPart)
