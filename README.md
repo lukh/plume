@@ -198,33 +198,26 @@ List of Property: (in the Plume Group)
 
 Item Related
 - UUID : uuid / or InventreeID
-- Version : Number or string (ro)
-- Revision : Number or string (ro)
-- Type : List [MechanicalPart, MechanicalAssembly, OtherItem]
+- Version : Number or string (ro, read from DB/filepath-tag ? or set up at release)
+- Revision : Number or string (ro, ro, read from DB/filepath-tag ? or set up at release)
+- Type : List [MechanicalPart, MechanicalAssembly, OtherItem] (ro, guessed from type ? or not, a MA can be bought and would need to be atomic in the DB)
+  - MechanicalPart
+  - an MechanicalAssembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
+  - OtherItem: software, stickers, cable, etc..
 
-  - an Assembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
-  - a Fastener (from Fastener Workbench) 
-- Reference: an internal reference (BAD IDEA HERE should be in inventree !)
-- Obsolete: Bool (should also be in inventree)
 - Manufactured: Bool, if False, the object is bought
   - a BoughtPart is bought from a distributor (a screw, a nut, a bearing, etc..) 
-    - is linked to a Inventree Part, it is a Part but I think multiples objects should be able to exists into multiples Assemblies,
-    - It will just tells the UUID to the BOM generator... ?
-    - No outputs ?
-    - No revision / Version ? (bad idea, one could buy complicated stuff from manufacturer that have rev/ver)
-    - Fasteners can be managed as SharedPart... ???? (and in the SharedFasteners.FCStd, they are handle as Part, that way they are managed by inventree, but it is not mandatory)
-    - If Manufactured is "False", there is no output 
-        - > there should be no problem to have several freecad object referencing to the UUID....
-        - > When creating a Non manufacturing part, either you select an existing UUID or Creating a new one (via a new release)
-        - > A ManufacturedPart MUST be unique
+    - Fasteners can be managed as SharedPart... ?(and in the SharedFasteners.FCStd, they are handle as Part, that way they are managed by inventree, but it is not mandatory)
   - a ManufacturedPart needs steps to build : 3D Prints, CNC, Metal Work, WoodWork, etc..)
     - It could need "Material", ie plastic, Profiles, etc...
+    - It has documents to describe the Item
 
 DocumentsGenerators
 - ExportedTechDrawPages: the list of related techdraw pages to export
 - ExportedCNCJobs: the list of related techdraw pages to export (for ManufacturedPart)
 - ExportedDXFs: the list of (techdrawpage) exported as DXF for manufacturing (for ManufacturedPart)
 - (ExportSTEP): Bool, but I think it is not needed, Parts/ManufacturedParts and Assemblies needs a full STEP export right ? and a Fastener doesn't.
+- ExternDoc (for external datasheet, etc : )
 
 
 ## Plume Tools
