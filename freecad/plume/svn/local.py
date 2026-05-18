@@ -16,6 +16,13 @@ _STATUS_ENTRY = \
             'switched'
         ])
 
+_INFO_ENTRY = \
+    collections.namedtuple(
+        '_INFO_ENTRY', [
+            'name',
+            'url',
+            'revision',
+        ])
 
 class LocalClient(svn.common.CommonClient):
     def __init__(self, path_, *args, **kwargs):
@@ -101,6 +108,35 @@ class LocalClient(svn.common.CommonClient):
                 name=name,
                 type_raw_name=change_type_raw,
                 type=change_type,
+                revision=revision,
+                switched=switched
+            )
+
+
+    def info(self, rel_path=None):
+        path = self.path
+        if rel_path is not None:
+            path += '/' + rel_path
+
+        raw = self.run_command(
+            'infos',
+            ['--xml', path],
+            do_combine=True)
+
+        root = xml.etree.ElementTree.fromstring(raw)
+
+        list_ = root.findall('entry')
+        for entry in list_:
+            entry_attr = entry.attrib
+            name = entry_attr['path']
+            revision = entry_attr.get('revision')
+            if revision is not None:
+                revision = int(revision)
+            url = entry.find('url')
+
+            yield _INFO_ENTRY(
+                name=name,
+                url=url,
                 revision=revision
             )
 
@@ -146,3 +182,15 @@ class LocalClient(svn.common.CommonClient):
             'unlock',
             args,
             wd=self.path)
+
+    def switch(self, url, rel_path):
+        """
+        svn switch URL[@PEGREV] [PATH]
+        """
+        args = [url, rel_path]
+
+        self.run_command(
+            'switch',
+            args,
+            wd=self.path)
+
