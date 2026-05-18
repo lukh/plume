@@ -13,6 +13,7 @@ _STATUS_ENTRY = \
             'type_raw_name',
             'type',
             'revision',
+            'switched'
         ])
 
 
@@ -90,6 +91,9 @@ class LocalClient(svn.common.CommonClient):
             # This will be absent if the file is "unversioned". It'll be "-1"
             # if added but not committed.
             revision = wcstatus_attr.get('revision')
+
+            SWICTHED_LUT = {"true":True, "false":False, None:None}
+            switched = SWICTHED_LUT[wcstatus_attr.get('switched')]
             if revision is not None:
                 revision = int(revision)
 
