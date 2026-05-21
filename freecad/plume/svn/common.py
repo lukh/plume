@@ -61,7 +61,8 @@ class CommonClient(svn.common_base.CommonBase):
 
         return None
 
-    def info(self, rel_path=None, revision=None):
+    # TODO : ugly fix, merge local.info and this one..
+    def common_info(self, rel_path=None, revision=None):
         cmd = []
         if revision is not None:
             cmd += ['-r', str(revision)]

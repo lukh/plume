@@ -56,6 +56,16 @@ class LocalClient(svn.common.CommonClient):
             args,
             wd=self.path)
 
+    def copy(self, src, dst, make_parents=False):
+        args = [src, dst]
+        if make_parents:
+            args.append('--parents')
+
+        output = self.run_command(
+            'copy',
+            args,
+            wd=self.path)
+
     def update(self, rel_filepaths=[], revision=None):
         cmd = []
         if revision is not None:
@@ -119,7 +129,7 @@ class LocalClient(svn.common.CommonClient):
             path += '/' + rel_path
 
         raw = self.run_command(
-            'infos',
+            'info',
             ['--xml', path],
             do_combine=True)
 
@@ -132,7 +142,7 @@ class LocalClient(svn.common.CommonClient):
             revision = entry_attr.get('revision')
             if revision is not None:
                 revision = int(revision)
-            url = entry.find('url')
+            url = entry.find('url').text
 
             yield _INFO_ENTRY(
                 name=name,
