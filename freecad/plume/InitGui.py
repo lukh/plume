@@ -132,6 +132,7 @@ class Plume(Gui.Workbench):
 
     toolbox_repository = [
         # "Plume_Connect",
+        "Plume_ManageWorkingCopies",
         "Plume_Update",
         "Plume_Commit",
         "Plume_Lock",
@@ -152,8 +153,9 @@ class Plume(Gui.Workbench):
     ]
 
     toolbox_object = [
-        "Plume_InitializeObject"
-        "Plume_UpdateLinkToVersion"
+        "Plume_InitializeObject",
+        # "Plume_UpdateLinkToVersion",
+        # "Plume_LinkObjectToItem"
     ]
 
 
@@ -166,7 +168,7 @@ class Plume(Gui.Workbench):
         here is the place to import all the commands
         """
         from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-        from freecad.plume.tools import Repository
+        from freecad.plume.tools import Repository, FCObjects
 
         Gui.addIconPath(ICONPATH)
         Gui.addPreferencePage(os.path.join(UIPATH, "preferences.ui"),"Plume")
@@ -176,7 +178,10 @@ class Plume(Gui.Workbench):
         # from freecad.plume.pl_tools import translate
 
         self.appendToolbar(translate("plume", "Repository"), self.toolbox_repository)
+        self.appendToolbar(translate("plume", "Object"), self.toolbox_object)
+
         self.appendMenu(translate("plume", "Repository"), self.toolbox_repository)
+        self.appendMenu(translate("plume", "Object"), self.toolbox_object)
 
     def Activated(self):
         """
@@ -196,5 +201,15 @@ class Plume(Gui.Workbench):
 
         # App.Console.PrintMessage(translate("frameforge", "Workbench frameforge de-activated.") + "\n")
 
+
+    def ContextMenu(self, recipient):
+        self.appendContextMenu("Plume", [
+            "Plume_InitializeObject",
+            "Plume_Update",
+            "Plume_BrowseRepository",
+            "Plume_Commit",
+            "Plume_Lock",
+            "Plume_Unlock",
+        ])
 
 Gui.addWorkbench(Plume())

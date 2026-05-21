@@ -6,6 +6,37 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
+from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
+
+from freecad.plume.utils.plume_svn import PlumeSvn, pl_snv
+
+class SubversionManageWorkingCopies:
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "update.svg"),
+            "MenuText": translate("Plume", "Manage Subversion Working Copies"),
+            "Accel": "P, M",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Manage Subversion Working Copies</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    def IsActive(self):
+        return True
+
+    def Activated(self):
+        global pl_snv
+
+        diag = ManageSubversionWorkingCopiesDialog()
+        diag.exec()
+
+        wc_path = diag.get_selected_path()
+        pl_snv = PlumeSvn(wc_path)
+
+        print("local", pl_snv.working_copy, "url", pl_snv.repo_url)
+
 
 
 class SubversionUpdateCommand:
@@ -117,6 +148,7 @@ class SubversionBrowse:
         pass
 
 
+Gui.addCommand("Plume_ManageWorkingCopies", SubversionManageWorkingCopies())
 Gui.addCommand("Plume_Update", SubversionUpdateCommand())
 Gui.addCommand("Plume_Commit", SubversionCommitFileCommand())
 Gui.addCommand("Plume_Lock", SubversionLockCommand())
