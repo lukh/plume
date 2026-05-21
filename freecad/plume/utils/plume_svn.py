@@ -5,12 +5,16 @@ import svn.local
 
 
 class PlumeSvn(object):
-    def __init__(self, workcopy, repo_url):
+    def __init__(self, workcopy, repo_url=None):
         workcopy = os.path.abspath(workcopy)
-        repo_url = repo_url.rstrip("/")
 
-        self.remote_repo = svn.remote.RemoteClient(repo_url)
         self.local_repo = svn.local.LocalClient(workcopy)
+        if repo_url is None:
+            repo_url = self.local_repo.common_info()['url']
+
+        repo_url = repo_url.rstrip("/")
+        self.remote_repo = svn.remote.RemoteClient(repo_url)
+
 
         self.working_copy = workcopy
         self.repo_url = repo_url
@@ -18,6 +22,28 @@ class PlumeSvn(object):
     def update(self, rel_filepaths=[], revision=None):
         self.local_repo.update(rel_filepaths=rel_filepaths, revision=revision)
 
+    def get_abs_path(self, path):
+        if not os.path.isabs(path):
+            path = os.path.join(self.working_copy, path)
+
+        # if not os.path.exists(path):
+        #     raise ValueError(f"can't get relative path for {path}")
+
+        return path
+
+    def get_rel_path(self, path):
+        """
+        Returns the relative (to self.working_copy) path from an absolute path 
+        """
+        if not os.path.isabs(path):
+            rp = path
+        else:
+            rp = os.path.relpath(path, start=self.working_copy)
+
+        # if not os.path.exists(os.path.join(self.working_copy, rp)):
+        #     raise ValueError(f"can't get relative path for {path}")
+
+        return rp
 
     def is_in_repository(self, abs_path):
         """
@@ -31,25 +57,24 @@ class PlumeSvn(object):
         except ValueError:
             return False
 
-    def get_abs_path(self, rel_path):
-        return os.path.join(self.working_copy, rel_path)
+    def is_path_clean(self, path):
+        rel_path = self.get_rel_path(path)
 
-    def get_rel_path(self, abs_path):
-        """
-        Returns the relative (to self.working_copy) path from an absolute path 
-        """
-        rp = os.path.relpath(abs_path, start=self.working_copy)
+        st_rep = list(self.local_repo.status(rel_path))
 
-        if not os.path.exists(os.path.join(self.working_copy, rp)):
-            raise ValueError(f"can't get relative path for {abs_path}")
+        if len(st_rep) > 0:
+            for s in st_rep:
+                if s.type_raw_name != "normal":
+                    return False
 
-        return rp
+        return True
+
         
-    def get_url(self, abs_path):
+    def get_url(self, path):
         """
-        Returns the URL from an absolute path 
+        Returns the URL from an absolute or relative path 
         """
-        rp = self.get_rel_path(abs_path)
+        rp = self.get_rel_path(path)
 
         return self.repo_url + "/" + rp
 
@@ -79,11 +104,12 @@ class PlumeSvn(object):
 
         return rootpath, subpath, filename
 
-    def get_trunk_path(self, rootpath, subpath, filename):
+    def get_trunk_path(self, rootpath, subpath="", filename=""):
         """
         Returns a trunk path (from self.working_copy) from rootpath, subpath, filename
         """
-        return f"{self.working_copy}{os.sep}{rootpath.strip(os.sep)}{os.sep}trunk{os.sep}{subpath.strip(os.sep)}{os.sep}{filename.strip(os.sep)}"
+        p = f"{rootpath.strip(os.sep)}{os.sep}trunk{os.sep}{subpath.strip(os.sep)}{os.sep}{filename.strip(os.sep)}"
+        return os.path.normpath(p)
 
     def is_release_path(self, rel_path):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
@@ -116,7 +142,8 @@ class PlumeSvn(object):
 
 
     def get_release_path(self, rootpath, subpath, release_name, version, revision, filename):
-        return f"{self.working_copy}{os.sep}{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
+        p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
+        return os.path.normpath(p)
 
 
 
@@ -129,24 +156,52 @@ class PlumeSvn(object):
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
-            raise ValueError("Can't execute status")
+            return False
         status = l[0]
 
         return status.switched
 
+    def get_switched_path(self, rel_path):
+        if not self.is_path_switched(rel_path):
+            raise ValueError(f"{rel_path} is not switched")
+
+        l = list(self.local_repo.info(rel_path))
+        if len(l) != 1:
+            raise ValueError("more info than able to process")
+
+        info = l[0]
+
+        return os.path.relpath(info.url, self.repo_url)
+
     def switch(self, rel_trunk_path, release_name, version, revision):
         if not self.is_trunk_path(rel_trunk_path):
-            raise ValueError(f"{rel_path} is not in a trunk")
+            raise ValueError(f"{rel_trunk_path} is not in a trunk")
+            
+        if not self.is_path_clean(rel_trunk_path):
+            raise ValueError(f"Can't switch, {rel_trunk_path} is not clean")
 
-        rootpath, subpath, filename = self.split_trunk_path(rel_path)
+        rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
 
         dest_path = self.get_release_path(rootpath, subpath, release_name, version, revision, filename)
 
         if not self.is_release_path(dest_path):
             raise ValueError(f"{dest_path} is not a release")
 
-    def unswitch(self, rel_path):
-        pass
+        dest_url = self.get_url(dest_path)
+        
+        self.local_repo.switch(dest_url, rel_trunk_path)
+
+    def unswitch(self, rel_trunk_path):
+        if not self.is_trunk_path(rel_trunk_path):
+            raise ValueError(f"{rel_trunk_path} is not in a trunk")
+
+        if not self.is_path_clean(rel_trunk_path):
+            raise ValueError(f"Can't unswitch, {rel_trunk_path} is not clean")
+
+        dest_url = self.get_url(rel_trunk_path)
+
+        self.local_repo.switch(dest_url, rel_trunk_path)
+
 
 
 
@@ -157,7 +212,7 @@ class PlumeSvn(object):
         pass
 
 
-    def create_project(rel_proj_path, commit=True):
+    def create_project(self, rel_proj_path, commit=True):
         """
         Create a project in rel_proj_path.
         Add trunk, tags, releases and branches subfolders into the above path
@@ -172,51 +227,65 @@ class PlumeSvn(object):
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "tags"))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "branches"))
 
-        self.local_repo.add(f"{rel_proj_path}")
+        self.local_repo.add(f"{rel_proj_path}", do_include_parents=True)
         if commit:
             self.local_repo.commit(f"adding {rel_proj_path} structure")
 
 
-    def release(root_path, tag_name, sub_paths=[]):
+    def release(self, rootpath, release_name, version, revision, sub_paths=[], commit_msg=None):
         """
         Release files or folder (project)
         :root_path : path to root folder (containing trunk, tags, releases and branches)
         :tag_name : the name of the release
-        :subpaths : a list of path (from the current trunk) to be released (file or folder/project)
+        :subpaths : a list of (subpath, filename) (from the current trunk) to be released (file or folder/project)
           or empty list (default) to release the folder
 
-        Solution to release partial...
-            cd repo_wc/tags
+        the subpath is reproduced inside the releases folder.
 
-            mkdir release_1.0
-            cd release_1.0
-
-            svn copy ^/trunk/myfile myfile
-
-            mkdir parts
-
-            svn copy ^/trunk/parts/file2 parts/file2
-            svn copy ^/trunk/parts/file3 parts/file3
-
-            svn commit -m "Create partial tag release_1.0"
+        The first sub_paths element is the "main file", ie it must be unswitched
+        The others must be switched on a specific release
         """
-    #     self.working_copy_trunk_path = os.path.join(root_path, "trunk")
-    #     # check existence of file
-    #     if not os.path.exists(os.path.join(self.working_copy, self.working_copy_trunk_path)):
-    #         raise ValueError(f"{root_path=} doesn't exist")
 
-    #     trunk_files = [os.path.join(self.working_copy_trunk_path, sp) for sp in sub_paths]
-    #     for tf in trunk_files:
-    #         # check existence of file
-    #         if not os.path.exists(os.path.join(self.working_copy, tf)):
-    #             raise ValueError(f"{tf} doesn't exist")
+        # check that the WC is clean
+        if not self.is_path_clean(self.get_trunk_path(rootpath)):
+            raise ValueError(f"{rootpath} is not clean")
 
-    #         # check file is up-to-date with the server
-    #         status = [s for s in self.local_repo.status(tf)]
-    #         if len(status) > 0:
-    #             raise Exception(f"{tf} is not up-to-date on the server: {status[0].type_raw_name}")
+        filepaths = []
 
-        
+        # check files are in order : first one is unswitched, others are
+        for idx, (sp, filename) in enumerate(sub_paths):
+            trunk_path = self.get_trunk_path(rootpath, sp, filename)
+            release_path = self.get_release_path(rootpath, sp, release_name, version, revision, filename)
+            print(sp, filename , trunk_path , release_path)
+
+            if not os.path.isfile(self.get_abs_path(trunk_path)):
+                raise ValueError(f"{trunk_path} doesn't exist")
+            if os.path.isfile(self.get_abs_path(release_path)):
+                raise ValueError(f"{release_path} already exists")
+
+            swp = self.is_path_switched(trunk_path)
+            
+            if (idx == 0) ^ swp:
+                filepaths.append((trunk_path, release_path))
+            else:
+                if idx == 0:
+                    raise ValueError(f"release: problem on file {trunk_path} : the main file is switched")
+                else:
+                    raise ValueError(f"release: problem on file {trunk_path} : sub file not switched")
+
+
+        for tp, rel_p in filepaths:
+            t_url = self.get_url(tp)
+            self.local_repo.copy(t_url, rel_p, make_parents=True)
+
+        if commit_msg is None:
+            commit_msg = f"Release {release_name}:{version}.{revision}"
+
+        self.local_repo.commit(commit_msg)
+
+
+
+pl_snv = None
 
     # def tag_library_file(rel_path, tag_name, commit_msg=None):
     #     """
