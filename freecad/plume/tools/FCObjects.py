@@ -58,24 +58,33 @@ class InitializePlumeObject:
                     "Manufactured Object",
                 ).PlManufactured = True
 
+
+                # 0 -- Prop_None, No special property attribute
+                # 1 -- Prop_ReadOnly, Property is read-only in the editor
+                # 2 -- Prop_Transient, Property won't be saved to file
+                # 4 -- Prop_Hidden, Property won't appear in the editor
+                # 8 -- Prop_Output, Modified property doesn't touch its parent container
+                # 16 -- Prop_NoRecompute, Modified property doesn't touch its container for recompute
+                # 32 -- Prop_NoPersist, Property won't be saved to file at all
+                # obj.addProperty("App::PropertyString", "MyCustomProperty", "", "", 8)
                 obj.addProperty(
                     "App::PropertyString",
                     "SvnStatus",
                     "Plume",
                     "SVN Status of the related file",
+                    1 + 2 + 8 + 16
                 ).SvnStatus = ""
-                obj.setEditorMode("SvnStatus", 1)  # user doesn't change !
 
                 obj.addProperty(
                     "App::PropertyString",
                     "SvnSwicthed",
                     "Plume",
                     "SVN Switch to another file",
+                    1 + 2 + 8 + 16
                 ).SvnSwicthed = ""
-                obj.setEditorMode("SvnSwicthed", 1)  # user doesn't change !
 
                 obj.addProperty(
-                    "App::PropertyLinkListChild",
+                    "App::PropertyLinkList",
                     "ExportedTechDrawPages",
                     "Plume",
                     "ExportedTechDrawPages",
@@ -83,7 +92,7 @@ class InitializePlumeObject:
                 obj.setEditorMode("ExportedTechDrawPages", 1)  # user doesn't change !
 
                 obj.addProperty(
-                    "App::PropertyLinkListChild",
+                    "App::PropertyLinkList",
                     "ExportedCNCJobs",
                     "Plume",
                     "ExportedCNCJobs",
@@ -91,7 +100,7 @@ class InitializePlumeObject:
                 obj.setEditorMode("ExportedCNCJobs", 1)  # user doesn't change !
 
                 obj.addProperty(
-                    "App::PropertyLinkListChild",
+                    "App::PropertyLinkList",
                     "ExportedDXFs",
                     "Plume",
                     "ExportedDXFs",
