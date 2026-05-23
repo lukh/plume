@@ -11,7 +11,7 @@ class ManageSubversionWorkingCopiesDialog(QDialog):
 
         param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
         if not param.IsEmpty():
-            wcp = param.GetString("WorkingCopy Paths").split(';')
+            wcp = param.GetString("WorkingCopy Available Paths").split(';')
 
         self.setWindowTitle('SVN Working Copies')
         # self.setWindowIcon(QIcon('./assets/wishlist.png'))
@@ -44,9 +44,6 @@ class ManageSubversionWorkingCopiesDialog(QDialog):
 
         layout.addWidget(buttonBox, 4, 0)
 
-
-        self._selected_path = None
-
         # show the window
         self.show()
 
@@ -69,14 +66,12 @@ class ManageSubversionWorkingCopiesDialog(QDialog):
         if curr_item is None:
             return False
 
-        self._selected_path = curr_item.text()
+        selected_path = curr_item.text()
 
         paths = [self.list_widget.item(x).text() for x in range(self.list_widget.count())]
 
         param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
-        param.SetString("WorkingCopy Paths", ";".join(paths))
+        param.SetString("WorkingCopy Available Paths", ";".join(paths))
+        param.SetString("CurrentWorkingCopy", selected_path)
 
         return super().accept()
-
-    def get_selected_path(self):
-        return self._selected_path
