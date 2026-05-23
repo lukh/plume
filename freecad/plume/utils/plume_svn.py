@@ -19,8 +19,30 @@ class PlumeSvn(object):
         self.working_copy = workcopy
         self.repo_url = repo_url
 
-    def update(self, rel_filepaths=[], revision=None):
-        self.local_repo.update(rel_filepaths=rel_filepaths, revision=revision)
+    def update(self, paths=[], revision=None):
+        self.local_repo.update(rel_filepaths=[self.get_rel_path(p) for p in paths], revision=revision)
+
+    def add(self, path):
+        path = self.get_rel_path(path)
+        if self.is_path_switched(path): # TODO : can't be switched if not in repo ???
+            raise ValueError(f'file {path} is switched')
+
+        self.local_repo.add(rel_path=path)
+
+    def commit(self, message, paths=[]):
+        for rf in paths:
+            if self.is_path_switched(rf):
+                raise ValueError(f'file {rf} is switched')
+
+        self.local_repo.commit(message, rel_filepaths=paths)
+
+    def lock(self, paths=[], message=None):
+        for p in paths:
+            self.local_repo.lock(self.get_rel_path(p), msg=message)
+
+    def unlock(self, paths=[]):
+        for p in paths:
+            self.local_repo.unlock(self.get_rel_path(p))
 
     def get_abs_path(self, path):
         if not os.path.isabs(path):
@@ -56,6 +78,20 @@ class PlumeSvn(object):
             return os.path.samefile(cp, self.working_copy)
         except ValueError:
             return False
+
+    def is_path_unversioned(self, rel_path):
+        if not os.path.exists(os.path.join(self.working_copy, rel_path)):
+            raise ValueError(f"{rel_path} doesn't exist")
+
+        if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
+            raise ValueError(f"{rel_path} is not a file")
+
+        l = list(self.local_repo.status(rel_path))
+        if len(l) != 1:
+            return False
+        status = l[0]
+
+        return status.type_raw_name == "unversioned"
 
     def is_path_clean(self, path):
         rel_path = self.get_rel_path(path)
@@ -284,8 +320,6 @@ class PlumeSvn(object):
         self.local_repo.commit(commit_msg)
 
 
-
-pl_snv = None
 
     # def tag_library_file(rel_path, tag_name, commit_msg=None):
     #     """

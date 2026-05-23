@@ -167,8 +167,11 @@ class LocalClient(svn.common.CommonClient):
             'rm',
             args)
 
-    def lock(self, rel_path, do_force=False):
+    def lock(self, rel_path, msg=None, do_force=False):
         args = []
+
+        if msg:
+            args += ["-m", f'"{msg}"']
 
         if do_force is True:
             args.append('--force')
