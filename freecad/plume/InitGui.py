@@ -5,6 +5,8 @@ import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 
+from freecad.plume.utils.plume_svn import PlumeSvn
+
 # Add translations path
 Gui.addLanguagePath(TRANSLATIONSPATH)
 Gui.updateLocale()

@@ -5,10 +5,14 @@ from collections import defaultdict
 import FreeCAD as App
 import FreeCADGui as Gui
 
+from PySide.QtWidgets import QInputDialog, QLineEdit
+
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
 
-from freecad.plume.utils.plume_svn import PlumeSvn, pl_snv
+from freecad.plume.tools.Common import CommonCommand
+
+from freecad.plume.utils.plume_svn import PlumeSvn
 
 class SubversionManageWorkingCopies:
     def GetResources(self):
@@ -27,19 +31,12 @@ class SubversionManageWorkingCopies:
         return True
 
     def Activated(self):
-        global pl_snv
-
         diag = ManageSubversionWorkingCopiesDialog()
         diag.exec()
 
-        wc_path = diag.get_selected_path()
-        pl_snv = PlumeSvn(wc_path)
-
-        print("local", pl_snv.working_copy, "url", pl_snv.repo_url)
 
 
-
-class SubversionUpdateCommand:
+class SubversionUpdateCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "update.svg"),
@@ -55,13 +52,13 @@ class SubversionUpdateCommand:
         }
 
     def IsActive(self):
-        return True
+        return self.svn() is not None
 
     def Activated(self):
-        pass
+        self.svn().update()
 
 
-class SubversionCommitFileCommand:
+class SubversionCommitFileCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "commit.svg"),
@@ -77,13 +74,36 @@ class SubversionCommitFileCommand:
         }
 
     def IsActive(self):
+        paths = self.get_files_from_objects()
+
+        if len(paths) == 0:
+            return False
+
+        svn = self.svn()
+        if svn is None:
+            return False
+
+        for p in paths:
+            if not svn.is_in_repository(p):
+                print(p, "not in repo")
+                return False
+
         return True
 
     def Activated(self):
-        pass
+        svn = self.svn()
+        paths = self.get_files_from_objects()
+
+        message, ok = QInputDialog.getText(None, 'Commit Message', 'Enter Commit Message:', QLineEdit.Normal, "")
+        if ok:
+            for path in paths:
+                if svn.is_path_unversioned(path):
+                    svn.add(path)
+            svn.commit(message, paths=paths)
+                
 
 
-class SubversionLockCommand:
+class SubversionLockCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "lock.svg"),
@@ -99,12 +119,29 @@ class SubversionLockCommand:
         }
 
     def IsActive(self):
+        paths = self.get_files_from_objects()
+
+        if len(paths) == 0:
+            return False
+
+        svn = self.svn()
+        if svn is None:
+            return False
+
+        for p in paths:
+            if not svn.is_in_repository(p):
+                print(p, "not in repo")
+                return False
+
         return True
 
     def Activated(self):
-        pass
+        svn = self.svn()
+        paths = self.get_files_from_objects()
 
-class SubversionUnlockCommand:
+        svn.lock(paths)
+
+class SubversionUnlockCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "unlock.svg"),
@@ -120,10 +157,27 @@ class SubversionUnlockCommand:
         }
 
     def IsActive(self):
+        paths = self.get_files_from_objects()
+
+        if len(paths) == 0:
+            return False
+
+        svn = self.svn()
+        if svn is None:
+            return False
+
+        for p in paths:
+            if not svn.is_in_repository(p):
+                print(p, "not in repo")
+                return False
+
         return True
 
     def Activated(self):
-        pass
+        svn = self.svn()
+        paths = self.get_files_from_objects()
+
+        svn.unlock(paths)
 
 
 class SubversionBrowse:
@@ -142,6 +196,9 @@ class SubversionBrowse:
         }
 
     def IsActive(self):
+        if pl_snv is None:
+            return False
+            
         return True
 
     def Activated(self):
