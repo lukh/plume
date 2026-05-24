@@ -17,7 +17,7 @@ from freecad.plume.utils.plume_svn import PlumeSvn
 class SubversionManageWorkingCopies:
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "update.svg"),
+            "Pixmap": os.path.join(ICONPATH, "browse.svg"),
             "MenuText": translate("Plume", "Manage Subversion Working Copies"),
             "Accel": "P, M",
             "ToolTip": translate(
