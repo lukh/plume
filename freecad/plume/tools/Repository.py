@@ -5,10 +5,8 @@ from collections import defaultdict
 import FreeCAD as App
 import FreeCADGui as Gui
 
-from PySide.QtWidgets import QInputDialog, QLineEdit
-
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
+from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, CommitDialog
 
 from freecad.plume.tools.Common import CommonCommand
 
@@ -76,30 +74,32 @@ class SubversionCommitFileCommand(CommonCommand):
     def IsActive(self):
         paths = self.get_files_from_objects()
 
-        if len(paths) == 0:
-            return False
-
         svn = self.svn()
         if svn is None:
             return False
 
         for p in paths:
             if not svn.is_in_repository(p):
-                print(p, "not in repo")
+                return False
+
+            if svn.is_path_clean(p):
                 return False
 
         return True
 
     def Activated(self):
         svn = self.svn()
-        paths = self.get_files_from_objects()
+        paths = [(svn.path_status(path).type_raw_name, path) for path in self.get_files_from_objects()]
+        if len(paths) == 0:
+            paths = [(s.type_raw_name, s.name) for s in svn.status() if not s.switched]
 
-        message, ok = QInputDialog.getText(None, 'Commit Message', 'Enter Commit Message:', QLineEdit.Normal, "")
+        ok, paths_to_commit, message = CommitDialog.get_commit_infos(paths=paths)
+
         if ok:
-            for path in paths:
+            for path in paths_to_commit:
                 if svn.is_path_unversioned(path):
                     svn.add(path)
-            svn.commit(message, paths=paths)
+            svn.commit(message, paths=paths_to_commit)
                 
 
 

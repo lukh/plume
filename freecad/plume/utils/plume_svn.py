@@ -79,7 +79,8 @@ class PlumeSvn(object):
         except ValueError:
             return False
 
-    def is_path_unversioned(self, rel_path):
+    def is_path_unversioned(self, path):
+        rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise ValueError(f"{rel_path} doesn't exist")
 
@@ -105,7 +106,30 @@ class PlumeSvn(object):
 
         return True
 
-        
+    def path_status(self, path):
+        rel_path = self.get_rel_path(path)
+        if not os.path.exists(os.path.join(self.working_copy, rel_path)):
+            raise ValueError(f"{rel_path} doesn't exist")
+
+        if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
+            raise ValueError(f"{rel_path} is not a file")
+
+        l = list(self.local_repo.status(rel_path))
+        if len(l) == 0:
+            return svn.local._STATUS_ENTRY(name=rel_path, type_raw_name="normal", type=None, revision=None, switched=None)
+        if len(l) > 1:
+            raise ValueError(f"{rel_path} more than one entry")
+        status = l[0]
+
+        return status
+
+    def status(self, path=""):
+        rel_path = self.get_rel_path(path)
+        if not os.path.exists(os.path.join(self.working_copy, rel_path)):
+            raise ValueError(f"{rel_path} doesn't exist")
+
+        return list(self.local_repo.status(rel_path))
+
     def get_url(self, path):
         """
         Returns the URL from an absolute or relative path 
