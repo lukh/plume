@@ -24,7 +24,15 @@ class InitializePlumeObject:
         }
 
     def IsActive(self):
-        return len(Gui.Selection.getSelection()) > 0
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 0:
+            return False
+
+        for obj in sel:
+            if hasattr(obj, "PlumeID"):
+                return False
+
+        return True
 
     def Activated(self):
         sel = Gui.Selection.getSelection()
