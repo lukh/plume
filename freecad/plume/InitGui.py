@@ -139,7 +139,6 @@ class Plume(Gui.Workbench):
         "Plume_Commit",
         "Plume_Lock",
         "Plume_Unlock",
-        "Plume_BrowseRepository"
     ]
 
     toolbox_project = [
@@ -208,7 +207,6 @@ class Plume(Gui.Workbench):
         self.appendContextMenu("Plume", [
             "Plume_InitializeObject",
             "Plume_Update",
-            "Plume_BrowseRepository",
             "Plume_Commit",
             "Plume_Lock",
             "Plume_Unlock",

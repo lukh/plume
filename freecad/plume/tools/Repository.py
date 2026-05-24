@@ -180,29 +180,6 @@ class SubversionUnlockCommand(CommonCommand):
         svn.unlock(paths)
 
 
-class SubversionBrowse:
-    def GetResources(self):
-        return {
-            "Pixmap": os.path.join(ICONPATH, "browse.svg"),
-            "MenuText": translate("Plume", "Browse repository/inventree for files and revisions"),
-            "Accel": "P, B",
-            "ToolTip": translate(
-                "Plume",
-                "<html><head/><body><p><b>Browse</b> \
-                    <br><br> \
-                    opens a Dialog to select files to be opened \
-                    </p></body></html>",
-            ),
-        }
-
-    def IsActive(self):
-        if pl_snv is None:
-            return False
-            
-        return True
-
-    def Activated(self):
-        pass
 
 
 Gui.addCommand("Plume_ManageWorkingCopies", SubversionManageWorkingCopies())
@@ -210,4 +187,3 @@ Gui.addCommand("Plume_Update", SubversionUpdateCommand())
 Gui.addCommand("Plume_Commit", SubversionCommitFileCommand())
 Gui.addCommand("Plume_Lock", SubversionLockCommand())
 Gui.addCommand("Plume_Unlock", SubversionUnlockCommand())
-Gui.addCommand("Plume_BrowseRepository", SubversionBrowse())
