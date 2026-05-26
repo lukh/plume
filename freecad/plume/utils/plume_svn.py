@@ -3,6 +3,8 @@ import pprint
 import svn.remote
 import svn.local
 
+class PlumeSvnException(Exception):
+    pass
 
 class PlumeSvn(object):
     def __init__(self, workcopy, repo_url=None):
@@ -25,14 +27,14 @@ class PlumeSvn(object):
     def add(self, path):
         path = self.get_rel_path(path)
         if self.is_path_switched(path): # TODO : can't be switched if not in repo ???
-            raise ValueError(f'file {path} is switched')
+            raise PlumeSvnException(f'file {path} is switched')
 
         self.local_repo.add(rel_path=path)
 
     def commit(self, message, paths=[]):
         for rf in paths:
             if self.is_path_switched(rf):
-                raise ValueError(f'file {rf} is switched')
+                raise PlumeSvnException(f'file {rf} is switched')
 
         self.local_repo.commit(message, rel_filepaths=paths)
 
@@ -82,10 +84,10 @@ class PlumeSvn(object):
     def is_path_unversioned(self, path):
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} doesn't exist")
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} is not a file")
+            raise PlumeSvnException(f"{rel_path} is not a file")
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
@@ -109,16 +111,16 @@ class PlumeSvn(object):
     def path_status(self, path):
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} doesn't exist")
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} is not a file")
+            raise PlumeSvnException(f"{rel_path} is not a file")
 
         l = list(self.local_repo.status(rel_path))
         if len(l) == 0:
             return svn.local._STATUS_ENTRY(name=rel_path, type_raw_name="normal", type=None, revision=None, switched=None)
         if len(l) > 1:
-            raise ValueError(f"{rel_path} more than one entry")
+            raise PlumeSvnException(f"{rel_path} more than one entry")
         status = l[0]
 
         return status
@@ -126,7 +128,7 @@ class PlumeSvn(object):
     def status(self, path=""):
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} doesn't exist")
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
 
         return list(self.local_repo.status(rel_path))
 
@@ -140,10 +142,10 @@ class PlumeSvn(object):
 
     def is_trunk_path(self, rel_path):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} doesn't exist")
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} is not a file")
+            raise PlumeSvnException(f"{rel_path} is not a file")
 
         return os.sep + 'trunk' in rel_path
 
@@ -154,7 +156,7 @@ class PlumeSvn(object):
         :ret : (rootpath, subpath, filename)
         """
         if not self.is_trunk_path(rel_path):
-            raise ValueError(f"{rel_path} is not in a trunk")
+            raise PlumeSvnException(f"{rel_path} is not in a trunk")
 
 
         rootpath, after_trunk_path = rel_path.split(os.sep + "trunk")
@@ -173,16 +175,16 @@ class PlumeSvn(object):
 
     def is_release_path(self, rel_path):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} doesn't exist")
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} is not a file")
+            raise PlumeSvnException(f"{rel_path} is not a file")
 
         return os.sep + 'releases' in rel_path
 
     def split_release_path(self, rel_path):
         if not self.is_release_path(rel_path):
-            raise ValueError(f"{rel_path} is not in a release")
+            raise PlumeSvnException(f"{rel_path} is not in a release")
 
         rootpath, after_release_path = rel_path.split("releases")
 
@@ -209,10 +211,10 @@ class PlumeSvn(object):
 
     def is_path_switched(self, rel_path):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} doesn't exist")
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise ValueError(f"{rel_path} is not a file")
+            raise PlumeSvnException(f"{rel_path} is not a file")
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
@@ -223,11 +225,11 @@ class PlumeSvn(object):
 
     def get_switched_path(self, rel_path):
         if not self.is_path_switched(rel_path):
-            raise ValueError(f"{rel_path} is not switched")
+            raise PlumeSvnException(f"{rel_path} is not switched")
 
         l = list(self.local_repo.info(rel_path))
         if len(l) != 1:
-            raise ValueError("more info than able to process")
+            raise PlumeSvnException("more info than able to process")
 
         info = l[0]
 
@@ -235,17 +237,17 @@ class PlumeSvn(object):
 
     def switch(self, rel_trunk_path, release_name, version, revision):
         if not self.is_trunk_path(rel_trunk_path):
-            raise ValueError(f"{rel_trunk_path} is not in a trunk")
+            raise PlumeSvnException(f"{rel_trunk_path} is not in a trunk")
             
         if not self.is_path_clean(rel_trunk_path):
-            raise ValueError(f"Can't switch, {rel_trunk_path} is not clean")
+            raise PlumeSvnException(f"Can't switch, {rel_trunk_path} is not clean")
 
         rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
 
         dest_path = self.get_release_path(rootpath, subpath, release_name, version, revision, filename)
 
         if not self.is_release_path(dest_path):
-            raise ValueError(f"{dest_path} is not a release")
+            raise PlumeSvnException(f"{dest_path} is not a release")
 
         dest_url = self.get_url(dest_path)
         
@@ -253,10 +255,10 @@ class PlumeSvn(object):
 
     def unswitch(self, rel_trunk_path):
         if not self.is_trunk_path(rel_trunk_path):
-            raise ValueError(f"{rel_trunk_path} is not in a trunk")
+            raise PlumeSvnException(f"{rel_trunk_path} is not in a trunk")
 
         if not self.is_path_clean(rel_trunk_path):
-            raise ValueError(f"Can't unswitch, {rel_trunk_path} is not clean")
+            raise PlumeSvnException(f"Can't unswitch, {rel_trunk_path} is not clean")
 
         dest_url = self.get_url(rel_trunk_path)
 
@@ -279,7 +281,7 @@ class PlumeSvn(object):
         Commit the changes if commit arg
         """
         if os.path.exists(os.path.join(self.working_copy, rel_proj_path)):
-            raise Exception(f"{rel_proj_path=} aldready exsist in {self.working_copy}")
+            raise PlumeSvnException(f"{rel_proj_path=} aldready exsist in {self.working_copy}")
 
         os.makedirs(os.path.join(self.working_copy, rel_proj_path))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "trunk"))
@@ -308,7 +310,7 @@ class PlumeSvn(object):
 
         # check that the WC is clean
         if not self.is_path_clean(self.get_trunk_path(rootpath)):
-            raise ValueError(f"{rootpath} is not clean")
+            raise PlumeSvnException(f"{rootpath} is not clean")
 
         filepaths = []
 
@@ -319,9 +321,9 @@ class PlumeSvn(object):
             print(sp, filename , trunk_path , release_path)
 
             if not os.path.isfile(self.get_abs_path(trunk_path)):
-                raise ValueError(f"{trunk_path} doesn't exist")
+                raise PlumeSvnException(f"{trunk_path} doesn't exist")
             if os.path.isfile(self.get_abs_path(release_path)):
-                raise ValueError(f"{release_path} already exists")
+                raise PlumeSvnException(f"{release_path} already exists")
 
             swp = self.is_path_switched(trunk_path)
             
@@ -329,9 +331,9 @@ class PlumeSvn(object):
                 filepaths.append((trunk_path, release_path))
             else:
                 if idx == 0:
-                    raise ValueError(f"release: problem on file {trunk_path} : the main file is switched")
+                    raise PlumeSvnException(f"release: problem on file {trunk_path} : the main file is switched")
                 else:
-                    raise ValueError(f"release: problem on file {trunk_path} : sub file not switched")
+                    raise PlumeSvnException(f"release: problem on file {trunk_path} : sub file not switched")
 
 
         for tp, rel_p in filepaths:

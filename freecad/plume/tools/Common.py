@@ -1,13 +1,27 @@
 import os
 from collections import defaultdict
 
+from PySide.QtWidgets import QMessageBox
+
 import FreeCAD as App
 import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
 
-from freecad.plume.utils.plume_svn import PlumeSvn
+from freecad.plume.svn.exception import SvnException
+from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
+
+
+def catch_svn(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except (PlumeSvnException, SvnException) as e:
+                App.Console.PrintMessage(f"SVN ERROR : {str(e)}")
+                QMessageBox.critical(None, "SVN ERROR", str(e))
+
+        return wrapper
 
 
 class CommonCommand:

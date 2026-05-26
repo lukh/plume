@@ -8,9 +8,9 @@ import FreeCADGui as Gui
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, CommitDialog
 
-from freecad.plume.tools.Common import CommonCommand
+from freecad.plume.tools.Common import CommonCommand, catch_svn
 
-from freecad.plume.utils.plume_svn import PlumeSvn
+from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
 
 class SubversionManageWorkingCopies:
     def GetResources(self):
@@ -28,6 +28,7 @@ class SubversionManageWorkingCopies:
     def IsActive(self):
         return True
 
+    @catch_svn
     def Activated(self):
         diag = ManageSubversionWorkingCopiesDialog()
         diag.exec()
@@ -52,6 +53,7 @@ class SubversionUpdateCommand(CommonCommand):
     def IsActive(self):
         return self.svn() is not None
 
+    @catch_svn
     def Activated(self):
         self.svn().update()
 
@@ -71,6 +73,7 @@ class SubversionCommitFileCommand(CommonCommand):
             ),
         }
 
+    @catch_svn
     def IsActive(self):
         paths = self.get_files_from_objects()
 
@@ -87,6 +90,7 @@ class SubversionCommitFileCommand(CommonCommand):
 
         return True
 
+    @catch_svn
     def Activated(self):
         svn = self.svn()
         paths = [(svn.path_status(path).type_raw_name, path) for path in self.get_files_from_objects()]
@@ -118,6 +122,7 @@ class SubversionLockCommand(CommonCommand):
             ),
         }
 
+    @catch_svn
     def IsActive(self):
         paths = self.get_files_from_objects()
 
@@ -135,6 +140,7 @@ class SubversionLockCommand(CommonCommand):
 
         return True
 
+    @catch_svn
     def Activated(self):
         svn = self.svn()
         paths = self.get_files_from_objects()
@@ -156,6 +162,7 @@ class SubversionUnlockCommand(CommonCommand):
             ),
         }
 
+    @catch_svn
     def IsActive(self):
         paths = self.get_files_from_objects()
 
@@ -173,6 +180,7 @@ class SubversionUnlockCommand(CommonCommand):
 
         return True
 
+    @catch_svn
     def Activated(self):
         svn = self.svn()
         paths = self.get_files_from_objects()
