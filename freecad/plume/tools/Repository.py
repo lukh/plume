@@ -50,6 +50,7 @@ class SubversionUpdateCommand(CommonCommand):
             ),
         }
 
+    @catch_svn
     def IsActive(self):
         return self.svn() is not None
 
@@ -85,7 +86,7 @@ class SubversionCommitFileCommand(CommonCommand):
             if not svn.is_in_repository(p):
                 return False
 
-            if svn.is_path_clean(p):
+            if svn.is_path_clean(p) and not svn.is_path_unversioned(p):
                 return False
 
         return True

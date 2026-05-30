@@ -133,3 +133,25 @@ class CommitDialog(QDialog):
         commit_msg = dialog.text_edit.toPlainText()
 
         return retcode == 1, paths_to_commit, commit_msg
+
+
+
+def open_or_create_directory(log_dir, caption=""):
+    """
+    open or create a directory
+    """
+
+    dialog = QtWidgets.QFileDialog(None, caption=caption)
+    dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+    dialog.setDirectory(log_dir)
+    dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+    dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+    dialog.setLabelText(QtWidgets.QFileDialog.Accept, "Select")
+    if dialog.exec_() == QtWidgets.QFileDialog.Accepted:
+        directories = dialog.selectedFiles()
+        if len(directories) != 1:
+            raise ValueError("can't get more than one dir selected")
+
+        return directories[0]
+
+    return None

@@ -142,15 +142,8 @@ class Plume(Gui.Workbench):
     ]
 
     toolbox_project = [
-        "Plume_CreateNewProject",
-        "Plume_CheckProject",
-        "Plume_ReleaseProject",
-    ]
-
-    toolbox_libraries = [
-        # "Plume_CreateNewLibrary",
-        "Plume_CheckLibrary",
-        "Plume_ReleaseLibrary",
+        "Plume_CreateProject",
+        "Plume_Release",
     ]
 
     toolbox_object = [
@@ -169,7 +162,7 @@ class Plume(Gui.Workbench):
         here is the place to import all the commands
         """
         from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-        from freecad.plume.tools import Repository, FCObjects
+        from freecad.plume.tools import Repository, FCObjects, Project
 
         Gui.addIconPath(ICONPATH)
         Gui.addPreferencePage(os.path.join(UIPATH, "preferences.ui"),"Plume")
@@ -179,9 +172,11 @@ class Plume(Gui.Workbench):
         # from freecad.plume.pl_tools import translate
 
         self.appendToolbar(translate("plume", "Repository"), self.toolbox_repository)
+        self.appendToolbar(translate("plume", "Project"), self.toolbox_project)
         self.appendToolbar(translate("plume", "Object"), self.toolbox_object)
 
         self.appendMenu(translate("plume", "Repository"), self.toolbox_repository)
+        self.appendMenu(translate("plume", "Project"), self.toolbox_project)
         self.appendMenu(translate("plume", "Object"), self.toolbox_object)
 
     def Activated(self):
