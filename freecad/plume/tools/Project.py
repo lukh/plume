@@ -57,7 +57,7 @@ class CreateProjectCommand(CommonCommand):
 
         svn.create_project(rel_path)
 
-        QMessageBox.info(None, "Project created", f"Project {rel_path} created !")
+        QMessageBox.information(None, "Project created", f"Project {rel_path} created !")
 
 
 class SwitchCommand(CommonCommand):
@@ -208,12 +208,15 @@ class ReleaseCommand(CommonCommand):
 
     @catch_svn
     def Activated(self):
+        release_ok = True
+        errors_msgs = []
+
         svn = self.svn()
         sel = Gui.Selection.getSelection()
 
         root = sel[0]
         if not hasattr(root, "PlumeID"):
-            QMessageBox.info(None, "Bad Object", "Selected object is not initialized with plume properties")
+            QMessageBox.information(None, "Bad Object", "Selected object is not initialized with plume properties")
             return
         abs_root_path = root.Document.FileName
         rel_root_path = svn.get_rel_path(abs_root_path)
@@ -221,25 +224,24 @@ class ReleaseCommand(CommonCommand):
         version = root.PlVersion
         revision = root.PlRevision
 
+        if version == "" or revision == "":
+            raise PlumeSvnException(f'{root.Label} : set version/revision')
+
         all_objects = list(traverse(root))
         related_objects = [o for o in all_objects if o != root]
 
 
         if not svn.is_in_repository(abs_root_path):
-            print('not in repo')
-            return False
+            raise PlumeSvnException(f'{abs_root_path} : not in repo')
 
         if not svn.is_trunk_path(rel_root_path):
-            print('not in trunk')
-            return False
+            raise PlumeSvnException(f'{rel_root_path} : not in trunk')
 
         if svn.is_path_switched(rel_root_path):
-            print('switched')
-            return False
+            raise PlumeSvnException(f'{rel_root_path} : switched')
 
         if not svn.is_path_clean(rel_root_path):
-            print('not clean')
-            return False
+            raise PlumeSvnException(f'{rel_root_path} : not clean')
 
 
         rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
@@ -250,28 +252,35 @@ class ReleaseCommand(CommonCommand):
         for p in [o.Document.FileName for o in related_objects]:
             rel_p = svn.get_rel_path(p)
             if not svn.is_in_repository(p):
-                print(p, "not in repo")
-                return False
+                errors_msgs.append(f"{p} not in repo")
+                release_ok = False
+                continue
 
             if os.path.commonpath((os.path.split(abs_root_path)[0], os.path.split(p)[0])) != os.path.split(abs_root_path)[0]:
-                print(p, "not in root object path")
-                return False
+                errors_msgs.append(f"{p} not in root object path")
+                release_ok = False
+                continue
 
             if not svn.is_path_clean(p):
-                print(p, "not clean")
-                return False
+                errors_msgs.append(f"{p} not clean")
+                release_ok = False
+                continue
  
             if not svn.is_path_switched(rel_p):
-                print(p, "not switched")
-                return False
+                errors_msgs.append(f"{p} not switched")
+                release_ok = False
+                continue
 
             if not svn.is_release_path(svn.get_switched_path(rel_p)):
-                print(p, "not switched to released path")
-                return False
+                errors_msgs.append(f"{p} not switched to released path")
+                release_ok = False
+                continue
 
             rp_rootpath, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
             if rp_rootpath != rootpath:
-                print(rp_rootpath, "not in root object path")
+                errors_msgs.append(f"{rp_rootpath} not in root object path")
+                release_ok = False
+                continue
 
             if (rp_rootpath, rp_subpath, rp_filename) not in related_paths:
                 related_paths.append((rp_rootpath, rp_subpath, rp_filename))
@@ -281,9 +290,14 @@ class ReleaseCommand(CommonCommand):
         for rp in related_paths:
             sub_paths.append((subpath, os.path.join(rp[1], rp[2])))
 
-        print("subpaths", sub_paths)
+        if release_ok:
+            if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, sp[0], sp[1]) for sp in sub_paths])}') == QMessageBox.StandardButton.Yes:
+                svn.release(rootpath, release_name, version, revision, sub_paths=sub_paths)
 
-        svn.release(rootpath, release_name, version, revision, sub_paths=sub_paths)
+                QMessageBox.information(None, "Release ok", f'releasing ...\n{"\n".join([svn.get_trunk_path(rootpath, sp[0], sp[1]) for sp in sub_paths])}')
+
+        else:
+            QMessageBox.warning(None, "Can't release", "\n".join(errors_msgs))
 
 
 
