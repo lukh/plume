@@ -117,6 +117,51 @@ class SwitchCommand(CommonCommand):
 
 
 
+class UnswitchCommand(CommonCommand):
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "check-project.svg"),
+            "MenuText": translate("Plume", "Unswitch a file"),
+            "Accel": "P, U",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Unswitch a file</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    @catch_svn
+    def IsActive(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            root = sel[0]
+            root_path = root.Document.FileName
+            if not (\
+                svn.is_in_repository(root_path) and \
+                svn.is_trunk_path(root_path) and \
+                svn.is_path_clean(root_path) \
+            ):
+                print("root object not clean / ready")
+                return False
+
+        elif len(sel) == 0:
+            # TODO open treewidget with filemodel
+            return False
+
+        return True
+
+    @catch_svn
+    def Activated(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            obj = sel[0]
+            rel_path = svn.get_rel_path(obj.Document.FileName)
+
+            svn.unswitch(rel_path)
 
 class ReleaseCommand(CommonCommand):
     def GetResources(self):
@@ -202,4 +247,5 @@ class ReleaseCommand(CommonCommand):
 
 Gui.addCommand("Plume_CreateProject", CreateProjectCommand())
 Gui.addCommand("Plume_Switch", SwitchCommand())
+Gui.addCommand("Plume_Unswitch", UnswitchCommand())
 Gui.addCommand("Plume_Release", ReleaseCommand())
