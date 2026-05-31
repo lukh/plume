@@ -38,6 +38,10 @@ class PlumeSvn(object):
 
         self.local_repo.commit(message, rel_filepaths=paths)
 
+    def is_path_locked(self, rel_path):
+        ret = self.path_status(rel_path)
+        return ret.locked
+
     def lock(self, paths=[], message=None):
         for p in paths:
             self.local_repo.lock(self.get_rel_path(p), msg=message)
@@ -118,7 +122,7 @@ class PlumeSvn(object):
 
         l = list(self.local_repo.status(rel_path))
         if len(l) == 0:
-            return svn.local._STATUS_ENTRY(name=rel_path, type_raw_name="normal", type=None, revision=None, switched=None)
+            return svn.local._STATUS_ENTRY(name=rel_path, type_raw_name="normal", type=None, revision=None, switched=None, locked=False)
         if len(l) > 1:
             raise PlumeSvnException(f"{rel_path} more than one entry")
         status = l[0]
