@@ -323,13 +323,17 @@ class PlumeSvn(object):
         if not self.is_path_clean(self.get_trunk_path(rootpath)):
             raise PlumeSvnException(f"{rootpath} is not clean")
 
+        if os.path.isdir(os.path.join(self.working_copy, self.get_release_path(rootpath, "", release_name, version, revision, ""))):
+            raise PlumeSvnException(f"{rootpath} release dir already exists")
+
+
         filepaths = []
 
         # check files are in order : first one is unswitched, others are
         for idx, (sp, filename) in enumerate(sub_paths):
             trunk_path = self.get_trunk_path(rootpath, sp, filename)
             release_path = self.get_release_path(rootpath, sp, release_name, version, revision, filename)
-            print(sp, filename , trunk_path , release_path)
+            # print(sp, filename , trunk_path , release_path)
 
             if not os.path.isfile(self.get_abs_path(trunk_path)):
                 raise PlumeSvnException(f"{trunk_path} doesn't exist")
@@ -348,6 +352,7 @@ class PlumeSvn(object):
 
 
         for tp, rel_p in filepaths:
+            # print("file to add: ", tp, rel_p)
             t_url = self.get_url(tp)
             self.local_repo.copy(t_url, rel_p, make_parents=True)
 
