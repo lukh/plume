@@ -103,7 +103,8 @@ class SwitchCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
         if len(sel) == 1:
             obj = sel[0]
-            rel_path = svn.get_rel_path(obj.Document.FileName)
+            abs_path = obj.Document.FileName
+            rel_path = svn.get_rel_path(abs_path)
 
             _, _, filename = svn.split_trunk_path(rel_path)
             releases = svn.get_releases_available(rel_path)
@@ -116,6 +117,8 @@ class SwitchCommand(CommonCommand):
 
                 svn.switch(rel_path, release_name, version, revision)
 
+                App.closeDocument(os.path.splitext(filename)[0])
+                App.openDocument(abs_path)
 
 
 class UnswitchCommand(CommonCommand):
@@ -161,9 +164,14 @@ class UnswitchCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
         if len(sel) == 1:
             obj = sel[0]
-            rel_path = svn.get_rel_path(obj.Document.FileName)
+
+            abs_path = obj.Document.FileName
+            rel_path = svn.get_rel_path(abs_path)
 
             svn.unswitch(rel_path)
+
+            App.closeDocument(os.path.splitext(os.path.split(abs_path)[1])[0])
+            App.openDocument(abs_path)
 
 class ReleaseCommand(CommonCommand):
     def GetResources(self):
