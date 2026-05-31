@@ -143,7 +143,6 @@ class UnswitchCommand(CommonCommand):
                 svn.is_trunk_path(root_path) and \
                 svn.is_path_clean(root_path) \
             ):
-                print("root object not clean / ready")
                 return False
 
         elif len(sel) == 0:
@@ -195,35 +194,52 @@ class ReleaseCommand(CommonCommand):
 
     @catch_svn
     def Activated(self):
+        svn = self.svn()
         sel = Gui.Selection.getSelection()
 
         root = sel[0]
         if not hasattr(root, "PlumeID"):
             QMessageBox.info(None, "Bad Object", "Selected object is not initialized with plume properties")
             return
-        root_path = root.Document.FileName
-        
+        abs_root_path = root.Document.FileName
+        rel_root_path = svn.get_rel_path(abs_root_path)
+
+        version = root.PlVersion
+        revision = root.PlRevision
 
         all_objects = list(traverse(root))
         related_objects = [o for o in all_objects if o != root]
 
-        svn = self.svn()
 
-        if not (\
-            svn.is_in_repository(root_path) and \
-            svn.is_trunk_path(root_path) and \
-            svn.is_path_clean(root_path) \
-        ):
-            print("root object not clean / ready")
+        if not svn.is_in_repository(abs_root_path):
+            print('not in repo')
+            return False
+
+        if not svn.is_trunk_path(rel_root_path):
+            print('not in trunk')
+            return False
+
+        if svn.is_path_switched(rel_root_path):
+            print('switched')
+            return False
+
+        if not svn.is_path_clean(rel_root_path):
+            print('not clean')
             return False
 
 
+        rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
+        release_name = os.path.splitext(filename)[0]
+
+
+        related_paths = []
         for p in [o.Document.FileName for o in related_objects]:
+            rel_p = svn.get_rel_path(p)
             if not svn.is_in_repository(p):
                 print(p, "not in repo")
                 return False
 
-            if os.path.commonpath((os.path.split(root_path)[0], os.path.split(p)[0])) != os.path.split(root_path)[0]:
+            if os.path.commonpath((os.path.split(abs_root_path)[0], os.path.split(p)[0])) != os.path.split(abs_root_path)[0]:
                 print(p, "not in root object path")
                 return False
 
@@ -231,17 +247,34 @@ class ReleaseCommand(CommonCommand):
                 print(p, "not clean")
                 return False
  
-            if not svn.is_path_switched(p):
+            if not svn.is_path_switched(rel_p):
                 print(p, "not switched")
                 return False
 
-            if not svn.is_release_path(svn.get_switched_path(p)):
+            if not svn.is_release_path(svn.get_switched_path(rel_p)):
                 print(p, "not switched to released path")
                 return False
 
-        print("root object :", root.Label, root.Document.FileName)
-        for o in related_objects:
-            print("    object :", o.Label, o.Document.FileName)
+            rp_rootpath, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
+            if rp_rootpath != rootpath:
+                print(rp_rootpath, "not in root object path")
+
+            if (rp_rootpath, rp_subpath, rp_filename) not in related_paths:
+                related_paths.append((rp_rootpath, rp_subpath, rp_filename))
+
+
+        sub_paths = [(subpath, filename)]
+        for rp in related_paths:
+            sub_paths.append((subpath, os.path.join(rp[1], rp[2])))
+
+        print("subpaths", sub_paths)
+
+        svn.release(rootpath, release_name, version, revision, sub_paths=sub_paths)
+
+
+
+
+
 
 
 
