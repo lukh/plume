@@ -13,7 +13,8 @@ _STATUS_ENTRY = \
             'type_raw_name',
             'type',
             'revision',
-            'switched'
+            'switched',
+            'locked'
         ])
 
 _INFO_ENTRY = \
@@ -114,12 +115,15 @@ class LocalClient(svn.common.CommonClient):
             if revision is not None:
                 revision = int(revision)
 
+            lock_status = wcstatus.find('lock') is not None
+
             yield _STATUS_ENTRY(
                 name=name,
                 type_raw_name=change_type_raw,
                 type=change_type,
                 revision=revision,
-                switched=switched
+                switched=switched,
+                locked=lock_status
             )
 
 
