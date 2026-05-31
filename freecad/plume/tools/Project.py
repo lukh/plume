@@ -84,9 +84,10 @@ class SwitchCommand(CommonCommand):
             if not (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
-                svn.is_path_clean(root_path) \
+                svn.is_path_clean(root_path) and \
+                (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
+                (not svn.is_path_locked(svn.get_rel_path(root_path)))
             ):
-                print("root object not clean / ready")
                 return False
 
         elif len(sel) == 0:
@@ -141,7 +142,9 @@ class UnswitchCommand(CommonCommand):
             if not (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
-                svn.is_path_clean(root_path) \
+                svn.is_path_clean(root_path) and \
+                svn.is_path_switched(svn.get_rel_path(root_path)) and \
+                (not svn.is_path_locked(svn.get_rel_path(root_path)))
             ):
                 return False
 
@@ -181,12 +184,23 @@ class ReleaseCommand(CommonCommand):
         if len(sel) != 1:
             return False
 
-        for obj in sel:
-            if not hasattr(obj, "PlumeID"):
-                return False
+        obj = sel[0]
+        if not hasattr(obj, "PlumeID"):
+            return False
+
+        root_path = obj.Document.FileName
 
         svn = self.svn()
         if svn is None:
+            return False
+
+        if not (\
+            svn.is_in_repository(root_path) and \
+            svn.is_trunk_path(root_path) and \
+            svn.is_path_clean(root_path) and \
+            (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
+            (not svn.is_path_locked(svn.get_rel_path(root_path)))
+        ):
             return False
 
         return True

@@ -89,6 +89,9 @@ class SubversionCommitFileCommand(CommonCommand):
             if svn.is_path_clean(p) and not svn.is_path_unversioned(p):
                 return False
 
+            if svn.is_path_switched(svn.get_rel_path(p)):
+                return False
+
         return True
 
     @catch_svn
@@ -136,7 +139,15 @@ class SubversionLockCommand(CommonCommand):
 
         for p in paths:
             if not svn.is_in_repository(p):
-                print(p, "not in repo")
+                return False
+
+            if not svn.is_path_clean(p):
+                return False
+
+            if svn.is_path_switched(svn.get_rel_path(p)):
+                return False
+
+            if svn.is_path_locked(svn.get_rel_path(p)):
                 return False
 
         return True
@@ -176,7 +187,15 @@ class SubversionUnlockCommand(CommonCommand):
 
         for p in paths:
             if not svn.is_in_repository(p):
-                print(p, "not in repo")
+                return False
+
+            if not svn.is_path_clean(p):
+                return False
+
+            if svn.is_path_switched(svn.get_rel_path(p)):
+                return False
+
+            if not svn.is_path_locked(svn.get_rel_path(p)):
                 return False
 
         return True
