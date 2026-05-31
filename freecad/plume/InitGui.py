@@ -143,6 +143,7 @@ class Plume(Gui.Workbench):
 
     toolbox_project = [
         "Plume_CreateProject",
+        "Plume_Switch",
         "Plume_Release",
     ]
 

@@ -207,7 +207,18 @@ class PlumeSvn(object):
         p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
         return os.path.normpath(p)
 
+    def get_releases_available(self, rel_trunk_path, release_name=None):
+        rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
+        if release_name is None:
+            release_name = os.path.splitext(filename)[0]
 
+        p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}"
+        releases_path = self.get_abs_path(os.path.normpath(p))
+
+        if not os.path.isdir(releases_path):
+            raise PlumeSvnException(f"{releases_path} doesn't exist")
+
+        return [d for d in os.listdir(releases_path) if os.path.isdir(os.path.join(releases_path, d))]
 
     def is_path_switched(self, rel_path):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):

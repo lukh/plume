@@ -14,7 +14,7 @@ from freecad.plume.tools.Common import CommonCommand, catch_svn
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
 from freecad.plume.utils.fc_utils import traverse
 
-class CreateProject(CommonCommand):
+class CreateProjectCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "new-project.svg"),
@@ -59,6 +59,61 @@ class CreateProject(CommonCommand):
 
         QMessageBox.info(None, "Project created", f"Project {rel_path} created !")
 
+
+class SwitchCommand(CommonCommand):
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "release-library.svg"),
+            "MenuText": translate("Plume", "Switch a file"),
+            "Accel": "P, P",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Switch a file to a released version</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    @catch_svn
+    def IsActive(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            root = sel[0]
+            root_path = root.Document.FileName
+            if not (\
+                svn.is_in_repository(root_path) and \
+                svn.is_trunk_path(root_path) and \
+                svn.is_path_clean(root_path) \
+            ):
+                print("root object not clean / ready")
+                return False
+
+        elif len(sel) == 0:
+            # TODO open treewidget with filemodel
+            return False
+
+        return True
+
+    @catch_svn
+    def Activated(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            obj = sel[0]
+            rel_path = svn.get_rel_path(obj.Document.FileName)
+
+            _, _, filename = svn.split_trunk_path(rel_path)
+            releases = svn.get_releases_available(rel_path)
+
+            release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_path}", releases)
+            if ok:
+                version, revision = release.split(".")
+
+                release_name = os.path.splitext(filename)[0]
+
+                svn.switch(rel_path, release_name, version, revision)
 
 
 
@@ -145,5 +200,6 @@ class ReleaseCommand(CommonCommand):
 
 
 
-Gui.addCommand("Plume_CreateProject", CreateProject())
+Gui.addCommand("Plume_CreateProject", CreateProjectCommand())
+Gui.addCommand("Plume_Switch", SwitchCommand())
 Gui.addCommand("Plume_Release", ReleaseCommand())
