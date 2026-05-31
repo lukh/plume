@@ -337,22 +337,25 @@ class PlumeSvn(object):
         for idx, (sp, filename) in enumerate(sub_paths):
             trunk_path = self.get_trunk_path(rootpath, sp, filename)
             release_path = self.get_release_path(rootpath, sp, release_name, version, revision, filename)
-            # print(sp, filename , trunk_path , release_path)
 
             if not os.path.isfile(self.get_abs_path(trunk_path)):
                 raise PlumeSvnException(f"{trunk_path} doesn't exist")
             if os.path.isfile(self.get_abs_path(release_path)):
                 raise PlumeSvnException(f"{release_path} already exists")
 
-            swp = self.is_path_switched(trunk_path)
+            switched = self.is_path_switched(trunk_path)
             
-            if (idx == 0) ^ swp:
-                filepaths.append((trunk_path, release_path))
-            else:
-                if idx == 0:
+            if idx == 0:
+                if switched:
                     raise PlumeSvnException(f"release: problem on file {trunk_path} : the main file is switched")
-                else:
+
+                filepaths.append((trunk_path, release_path))
+            
+            else:
+                if not switched:
                     raise PlumeSvnException(f"release: problem on file {trunk_path} : sub file not switched")
+
+                filepaths.append((self.get_switched_path(trunk_path), release_path))
 
 
         for tp, rel_p in filepaths:
