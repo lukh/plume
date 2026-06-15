@@ -14,7 +14,8 @@ _STATUS_ENTRY = \
             'type',
             'revision',
             'switched',
-            'locked'
+            'locked',
+            'external'
         ])
 
 _INFO_ENTRY = \
@@ -109,11 +110,14 @@ class LocalClient(svn.common.CommonClient):
             # This will be absent if the file is "unversioned". It'll be "-1"
             # if added but not committed.
             revision = wcstatus_attr.get('revision')
+            if revision is not None:
+                revision = int(revision)
 
             SWICTHED_LUT = {"true":True, "false":False, None:None}
             switched = SWICTHED_LUT[wcstatus_attr.get('switched')]
-            if revision is not None:
-                revision = int(revision)
+            
+            EXTERNAL_LUT = {"true":True, "false":False, None:False}
+            external = EXTERNAL_LUT[wcstatus_attr.get('file-external')]
 
             lock_status = wcstatus.find('lock') is not None
 
@@ -123,7 +127,8 @@ class LocalClient(svn.common.CommonClient):
                 type=change_type,
                 revision=revision,
                 switched=switched,
-                locked=lock_status
+                locked=lock_status,
+                external=external
             )
 
 
