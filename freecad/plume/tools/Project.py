@@ -86,6 +86,7 @@ class SwitchCommand(CommonCommand):
                 svn.is_trunk_path(root_path) and \
                 svn.is_path_clean(root_path) and \
                 (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
+                (not svn.is_path_external(svn.get_rel_path(root_path))) and \
                 (not svn.is_path_locked(svn.get_rel_path(root_path)))
             ):
                 return False
@@ -147,6 +148,7 @@ class UnswitchCommand(CommonCommand):
                 svn.is_trunk_path(root_path) and \
                 svn.is_path_clean(root_path) and \
                 svn.is_path_switched(svn.get_rel_path(root_path)) and \
+                (not svn.is_path_external(svn.get_rel_path(root_path))) and \
                 (not svn.is_path_locked(svn.get_rel_path(root_path)))
             ):
                 return False
@@ -206,6 +208,7 @@ class ReleaseCommand(CommonCommand):
             svn.is_in_repository(root_path) and \
             svn.is_trunk_path(root_path) and \
             svn.is_path_clean(root_path) and \
+            (not svn.is_path_external(svn.get_rel_path(root_path))) and \
             (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
             (not svn.is_path_locked(svn.get_rel_path(root_path)))
         ):
@@ -274,15 +277,18 @@ class ReleaseCommand(CommonCommand):
                 release_ok = False
                 continue
  
-            if not svn.is_path_switched(rel_p):
-                errors_msgs.append(f"{p} not switched")
-                release_ok = False
-                continue
+            if not svn.is_path_external(rel_p):
+                if not svn.is_path_switched(rel_p):
+                    errors_msgs.append(f"{p} not switched")
+                    release_ok = False
+                    continue
 
-            if not svn.is_release_path(svn.get_switched_path(rel_p)):
-                errors_msgs.append(f"{p} not switched to released path")
-                release_ok = False
-                continue
+                if not svn.is_release_path(svn.get_switched_path(rel_p)):
+                    errors_msgs.append(f"{p} not switched to released path")
+                    release_ok = False
+                    continue
+            else:
+                pass
 
             rp_rootpath, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
             if rp_rootpath != rootpath:
