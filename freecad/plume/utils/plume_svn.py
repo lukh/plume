@@ -280,6 +280,57 @@ class PlumeSvn(object):
         self.local_repo.switch(dest_url, rel_trunk_path)
 
 
+    def is_path_external(self, rel_path):
+        if not os.path.exists(os.path.join(self.working_copy, rel_path)):
+            raise PlumeSvnException(f"{rel_path} doesn't exist")
+
+        if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
+            raise PlumeSvnException(f"{rel_path} is not a file")
+
+        l = list(self.local_repo.status(rel_path))
+        if len(l) != 1:
+            return False
+        status = l[0]
+        return status.external
+
+
+    def add_externals(self, rel_root_path, dest_sub_dir, rel_targets_path, commit_msg=None):
+        rel_trunk_path = os.path.join(rel_root_path, "trunk")
+        if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
+            raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
+
+        dest_dir = os.path.join(self.get_abs_path(rel_trunk_path), dest_sub_dir)
+
+        if not os.path.isdir(dest_dir):
+            os.makedirs(dest_dir)
+            self.local_repo.add(dest_dir)
+
+
+        externals_files = []
+        for rtp in rel_targets_path:
+            if not self.is_release_path(rtp):
+                raise PlumeSvnException(f"{rtp} not in a release path")
+            # if self.is_path_switched(rtp):
+            #     raise PlumeSvnException(f"{rtp} is switched")
+
+            externals_files.append(
+                (
+                    self.get_url(rtp), 
+                    os.path.join(dest_sub_dir, os.path.split(rtp)[1])
+                )
+            )
+
+
+        self.local_repo.set_properties(
+            rel_trunk_path , 
+            "svn:externals", 
+            "\n".join([" ".join(ef) for ef in externals_files])
+        )
+
+        if commit_msg is None:
+            commit_msg = f"Add externals to {rel_root_path}"
+
+        self.local_repo.commit(commit_msg)
 
 
     def initialize_repo():
@@ -332,6 +383,11 @@ class PlumeSvn(object):
 
 
         filepaths = []
+        externals_files = []
+
+        # TODO sort out X (externals) from sub_paths
+        release_root_path = self.get_release_path(rootpath, "", release_name, version, revision, "")
+        
 
         # check files are in order : first one is unswitched, others are
         for idx, (sp, filename) in enumerate(sub_paths):
@@ -343,25 +399,45 @@ class PlumeSvn(object):
             if os.path.isfile(self.get_abs_path(release_path)):
                 raise PlumeSvnException(f"{release_path} already exists")
 
+            external = self.is_path_external(trunk_path)
             switched = self.is_path_switched(trunk_path)
             
-            if idx == 0:
-                if switched:
-                    raise PlumeSvnException(f"release: problem on file {trunk_path} : the main file is switched")
+            if not external:
+                if idx == 0:
+                    if switched:
+                        raise PlumeSvnException(f"release: problem on file {trunk_path} : the main file is switched")
 
-                filepaths.append((trunk_path, release_path))
-            
+                    filepaths.append((trunk_path, release_path))
+                
+                else:
+                    if not switched:
+                        raise PlumeSvnException(f"release: problem on file {trunk_path} : sub file not switched")
+
+                    filepaths.append((self.get_switched_path(trunk_path), release_path))
             else:
-                if not switched:
-                    raise PlumeSvnException(f"release: problem on file {trunk_path} : sub file not switched")
+                sts = list(self.local_repo.info(trunk_path))
+                if len(sts) != 1:
+                    raise PlumeSvnException(f"release : error while analysing ext file {trunk_path}")
 
-                filepaths.append((self.get_switched_path(trunk_path), release_path))
+                st = sts[0]
+                url = st.url
+
+                externals_files.append((url, filename))
 
 
-        for tp, rel_p in filepaths:
+
+        for tp, rel_p in filepaths: # switched files, and main root file
             # print("file to add: ", tp, rel_p)
             t_url = self.get_url(tp)
             self.local_repo.copy(t_url, rel_p, make_parents=True)
+
+        # TODO : add externals to release
+        if len(externals_files) > 0:
+            self.local_repo.set_properties(
+                release_root_path, 
+                "svn:externals", 
+                "\n".join([" ".join(ef) for ef in externals_files])
+            )
 
         if commit_msg is None:
             commit_msg = f"Release {release_name}:{version}.{revision}"
