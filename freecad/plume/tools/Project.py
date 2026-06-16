@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 
-from PySide.QtWidgets import QInputDialog, QMessageBox
+from PySide.QtWidgets import QInputDialog, QMessageBox, QFileDialog
 
 import FreeCAD as App
 import FreeCADGui as Gui
@@ -175,6 +175,80 @@ class UnswitchCommand(CommonCommand):
             App.closeDocument(os.path.splitext(os.path.split(abs_path)[1])[0])
             App.openDocument(abs_path)
 
+
+
+class ImportExternalCommand(CommonCommand):
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "check-library.svg"),
+            "MenuText": translate("Plume", "Import external file to project"),
+            "Accel": "P, P",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Import a (released) file as subversion's external into the project</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    @catch_svn
+    def IsActive(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            root = sel[0]
+            root_path = root.Document.FileName
+            if svn.is_in_repository(root_path) and svn.is_trunk_path(root_path):
+                return True
+
+        return False
+
+
+    @catch_svn
+    def Activated(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        obj = sel[0]
+        doc_path = obj.Document.FileName
+
+        rel_root_path, _, _ = svn.split_trunk_path(svn.get_rel_path(doc_path))
+        abs_root_path = svn.get_abs_path(rel_root_path)
+
+
+        filenames, _ = QFileDialog.getOpenFileNames(None, caption="Select files to import", dir=svn.working_copy)
+
+        if len(filenames) == 0:
+            return
+        if any([not svn.is_in_repository(f) for f in filenames]):
+            return
+        if any([not svn.is_release_path(f) for f in filenames]):
+            return
+
+
+        dest = open_or_create_directory(os.path.join(abs_root_path, "trunk"), "Select destination (sub) dir")
+        if dest is None:
+            return
+
+        abs_root_path_trunk = os.path.join(abs_root_path, "trunk")
+
+        if os.path.commonpath((dest, abs_root_path_trunk)) != abs_root_path_trunk:
+            raise PlumeSvnException(f'{dest} : not in project root path {abs_root_path_trunk}!')
+
+        dest_sub_dir = os.path.relpath(dest, os.path.join(abs_root_path, "trunk"))
+
+
+        print(rel_root_path, dest_sub_dir)
+
+        rel_target_paths = [svn.get_rel_path(f) for f in filenames]
+        svn.add_externals(rel_root_path, dest_sub_dir, rel_target_paths)
+
+
+class RemoveExternalCommand(CommonCommand):
+    pass
+
+
+
 class ReleaseCommand(CommonCommand):
     def GetResources(self):
         return {
@@ -323,4 +397,5 @@ class ReleaseCommand(CommonCommand):
 Gui.addCommand("Plume_CreateProject", CreateProjectCommand())
 Gui.addCommand("Plume_Switch", SwitchCommand())
 Gui.addCommand("Plume_Unswitch", UnswitchCommand())
+Gui.addCommand("Plume_ImportExternal", ImportExternalCommand())
 Gui.addCommand("Plume_Release", ReleaseCommand())
