@@ -122,7 +122,7 @@ class PlumeSvn(object):
 
         l = list(self.local_repo.status(rel_path))
         if len(l) == 0:
-            return svn.local._STATUS_ENTRY(name=rel_path, type_raw_name="normal", type=None, revision=None, switched=None, locked=False)
+            return svn.local._STATUS_ENTRY(name=rel_path, type_raw_name="normal", type=None, revision=None, switched=None, locked=False, external=False)
         if len(l) > 1:
             raise PlumeSvnException(f"{rel_path} more than one entry")
         status = l[0]
@@ -304,14 +304,15 @@ class PlumeSvn(object):
         if not os.path.isdir(dest_dir):
             os.makedirs(dest_dir)
             self.local_repo.add(dest_dir)
+            self.local_repo.commit(f"add {dest_dir} in {rel_trunk_path}", rel_filepaths=[dest_dir])
 
 
         externals_files = []
         for rtp in rel_targets_path:
             if not self.is_release_path(rtp):
                 raise PlumeSvnException(f"{rtp} not in a release path")
-            # if self.is_path_switched(rtp):
-            #     raise PlumeSvnException(f"{rtp} is switched")
+            if self.is_path_switched(rtp):
+                raise PlumeSvnException(f"{rtp} is switched")
 
             externals_files.append(
                 (
@@ -320,17 +321,19 @@ class PlumeSvn(object):
                 )
             )
 
-
+        existing_props = self.local_repo.properties(rel_trunk_path)
+        existings_externals = existing_props.get("svn:externals", "")
         self.local_repo.set_properties(
             rel_trunk_path , 
             "svn:externals", 
-            "\n".join([" ".join(ef) for ef in externals_files])
+            existings_externals + "\n".join([" ".join(ef) for ef in externals_files])
         )
 
         if commit_msg is None:
             commit_msg = f"Add externals to {rel_root_path}"
 
         self.local_repo.commit(commit_msg)
+        self.local_repo.update([rel_trunk_path])
 
 
     def initialize_repo():

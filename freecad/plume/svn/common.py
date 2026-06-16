@@ -134,6 +134,14 @@ class CommonClient(svn.common_base.CommonBase):
 
         return info
 
+    def set_properties(self, rel_path, prop_name, prop_val):
+        args = [prop_name, prop_val, rel_path]
+
+        return self.run_command(
+            'propset',
+            args,
+            wd=self.path)
+
     def properties(self, rel_path=None):
         """ Return a dictionary with all svn-properties associated with a
             relative path.
