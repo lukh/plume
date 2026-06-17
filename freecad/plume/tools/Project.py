@@ -238,14 +238,60 @@ class ImportExternalCommand(CommonCommand):
         dest_sub_dir = os.path.relpath(dest, os.path.join(abs_root_path, "trunk"))
 
 
-        print(rel_root_path, dest_sub_dir)
-
         rel_target_paths = [svn.get_rel_path(f) for f in filenames]
         svn.add_externals(rel_root_path, dest_sub_dir, rel_target_paths)
 
 
 class RemoveExternalCommand(CommonCommand):
-    pass
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "check-library.svg"),
+            "MenuText": translate("Plume", "Remove external file from project"),
+            "Accel": "P, R",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Remove an external file from the project</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    @catch_svn
+    def IsActive(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            root = sel[0]
+            root_path = root.Document.FileName
+            if (\
+                svn.is_in_repository(root_path) and \
+                svn.is_trunk_path(root_path) and \
+                svn.is_path_clean(root_path) and \
+                (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
+                (not svn.is_path_external(svn.get_rel_path(root_path)))
+            ):
+                return True
+
+        return False
+
+
+    @catch_svn
+    def Activated(self):
+        svn = self.svn()
+
+        sel = Gui.Selection.getSelection()
+        root = sel[0]
+        root_path = root.Document.FileName
+
+        rel_root_path, _, _ = svn.split_trunk_path(svn.get_rel_path(root_path))
+        externals = svn.get_externals(rel_root_path)
+
+        ext_to_remove, ok = QInputDialog.getItem(None, "Choose a file to remove from project", f"Project {rel_root_path}", [k for k in externals])
+
+        if ok and ext_to_remove:
+            del externals[ext_to_remove]
+            svn.set_externals(rel_root_path, externals, commit_msg=f'remove {ext_to_remove} from {root_path}')
+
 
 
 
@@ -398,4 +444,5 @@ Gui.addCommand("Plume_CreateProject", CreateProjectCommand())
 Gui.addCommand("Plume_Switch", SwitchCommand())
 Gui.addCommand("Plume_Unswitch", UnswitchCommand())
 Gui.addCommand("Plume_ImportExternal", ImportExternalCommand())
+Gui.addCommand("Plume_RemoveExternal", RemoveExternalCommand())
 Gui.addCommand("Plume_Release", ReleaseCommand())

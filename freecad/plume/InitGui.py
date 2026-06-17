@@ -146,6 +146,7 @@ class Plume(Gui.Workbench):
         "Plume_Switch",
         "Plume_Unswitch",
         "Plume_ImportExternal",
+        "Plume_RemoveExternal",
         "Plume_Release",
     ]
 
