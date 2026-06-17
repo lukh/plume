@@ -294,6 +294,51 @@ class PlumeSvn(object):
         return status.external
 
 
+    def get_externals(self, rel_root_path):
+        """
+        returns externals of a root path in the form
+        {dest:url, ...}
+        dest from trunk
+        """
+        rel_trunk_path = os.path.join(rel_root_path, "trunk")
+        if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
+            raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
+
+        props = self.local_repo.properties(rel_trunk_path)
+        externals = {}
+        for ext in props.get("svn:externals", "").strip("\n").split('\n'):
+            ed = ext.split()
+            if len(ed) == 2:
+                url, dest = ed
+                externals[dest] = url
+            elif len(ed) == 0:
+                print("empty svn:externals ?")
+            else:
+                raise PlumeSvnException(f"Can't handle externals props for {rel_trunk_path}")
+
+        return externals
+        
+
+    def set_externals(self, rel_root_path, externals, commit_msg=None):
+        """
+        param externals: {dest:url, ...}
+        """
+        rel_trunk_path = os.path.join(rel_root_path, "trunk")
+        if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
+            raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
+
+        self.local_repo.set_properties(
+            rel_trunk_path , 
+            "svn:externals", 
+            "\n".join([f"{externals[des]} {des}" for des in externals])
+        )
+
+        if commit_msg is None:
+            commit_msg = f"set externals for {rel_trunk_path}"
+        self.local_repo.commit(commit_msg)
+        self.local_repo.update([rel_trunk_path])
+
+
     def add_externals(self, rel_root_path, dest_sub_dir, rel_targets_path, commit_msg=None):
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
         if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
