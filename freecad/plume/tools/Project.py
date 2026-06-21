@@ -180,7 +180,7 @@ class UnswitchCommand(CommonCommand):
 class ImportExternalCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "check-library.svg"),
+            "Pixmap": os.path.join(ICONPATH, "extern-add.svg"),
             "MenuText": translate("Plume", "Import external file to project"),
             "Accel": "P, P",
             "ToolTip": translate(
@@ -245,7 +245,7 @@ class ImportExternalCommand(CommonCommand):
 class RemoveExternalCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "check-library.svg"),
+            "Pixmap": os.path.join(ICONPATH, "extern-remove.svg"),
             "MenuText": translate("Plume", "Remove external file from project"),
             "Accel": "P, R",
             "ToolTip": translate(
