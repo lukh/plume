@@ -1,9 +1,12 @@
 from enum import IntEnum
+from collections import defaultdict
 
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeView, QListView
 from PyQt6.QtCore import QDir, Qt, QModelIndex
 from PyQt6.QtGui import QColor, QFileSystemModel
+
+from svn.local import _STATUS_ENTRY
 
 
 # class SVNRoles(IntEnum):
@@ -12,15 +15,15 @@ from PyQt6.QtGui import QColor, QFileSystemModel
 
 
 class SVNFileSystemModel(QFileSystemModel):
-
     REVISION_COLUMN = 0
     STATUS_COLUMN = 1
-    LAST_AUTHOR_COLUMN = 2
-    SWITCHED_COLUMN = 3
-    LOCKED_COLUMN = 4
-    EXTERNAL_COLUMN = 5
+    LAST_COMMIT_COLUMN = 3
+    LAST_AUTHOR_COLUMN = 4
+    SWITCHED_COLUMN = 5
+    LOCKED_COLUMN = 6
+    EXTERNAL_COLUMN = 7
 
-    EXTRA_COLUMNS_COUNT = 6
+    EXTRA_COLUMNS_COUNT = 8
 
     STATUS_COLORS = {
         "modified": QColor("#0066cc"),
@@ -34,7 +37,7 @@ class SVNFileSystemModel(QFileSystemModel):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self._svn = {}
+        self._svn = defaultdict(_STATUS_ENTRY)
         # {
         #   path: {
         #       "revision": "1542",
@@ -44,11 +47,6 @@ class SVNFileSystemModel(QFileSystemModel):
 
     # ---------------------------------------------------------
     # Helpers
-    # ---------------------------------------------------------
-
-    def svnInfo(self, path):
-        return self._svn.get(path, {})
-
     def svnRevision(self, path):
         return self._svn.get(path, {}).get("revision", "")
 
@@ -88,8 +86,11 @@ class SVNFileSystemModel(QFileSystemModel):
             if section == (source_cols + self.STATUS_COLUMN):
                 return "Status"
 
+            if section == (source_cols + self.LAST_COMMIT_COLUMN):
+                return "Last Commited Revision"
+
             if section == (source_cols + self.LAST_AUTHOR_COLUMN):
-                return "Last Author"
+                return "Last Commited Author"
 
             if section == (source_cols + self.SWITCHED_COLUMN):
                 return "Switched"
@@ -124,6 +125,7 @@ class SVNFileSystemModel(QFileSystemModel):
         )
 
         path = self.filePath(path_index)
+        entry = self._svn[path]
 
         # --------------------------------------
         # Custom roles
@@ -140,14 +142,13 @@ class SVNFileSystemModel(QFileSystemModel):
         # --------------------------------------
 
         if index.column() < source_cols:
-
             # Coloration du nom
             if (
                 role == Qt.ItemDataRole.ForegroundRole
                 # and index.column() == 0
             ):
 
-                status = self.svnStatus(path).lower()
+                status = entry.type_raw_name.lower()
 
                 if status in self.STATUS_COLORS:
                     return self.STATUS_COLORS[status]
@@ -160,15 +161,30 @@ class SVNFileSystemModel(QFileSystemModel):
 
         if role == Qt.ItemDataRole.DisplayRole:
 
-            if index.column() == source_cols:
-                return self.svnRevision(path)
+            if index.column() == (source_cols + self.REVISION_COLUMN):
+                return entry.revision
 
-            if index.column() == source_cols + 1:
-                return self.svnStatus(path)
+            if index.column() == (source_cols + self.STATUS_COLUMN):
+                return entry.type_raw_name
+
+            if index.column() == (source_cols + self.LAST_COMMIT_COLUMN):
+                return entry.last_committed_revision
+
+            if index.column() == (source_cols + self.LAST_AUTHOR_COLUMN):
+                return entry.last_committed_author
+
+            if index.column() == (source_cols + self.SWITCHED_COLUMN):
+                return entry.switched
+
+            if index.column() == (source_cols + self.LOCKED_COLUMN):
+                return entry.locked
+
+            if index.column() == (source_cols + self.EXTERNAL_COLUMN):
+                return entry.external
 
         if role == Qt.ItemDataRole.ForegroundRole:
 
-            status = self.svnStatus(path).lower()
+            status = entry.type_raw_name.lower()
 
             if status in self.STATUS_COLORS:
                 return self.STATUS_COLORS[status]
@@ -181,24 +197,18 @@ class SVNFileSystemModel(QFileSystemModel):
 
     def setSVNInfo(
         self,
-        path,
-        revision=None,
-        status=None
+        status_entry
     ):
-
-        info = self._svn.setdefault(path, {})
-
-        if revision is not None:
-            info["revision"] = revision
-
-        if status is not None:
-            info["status"] = status
+        path = status_entry.name
+        self._svn[path] = status_entry
 
         self.refreshPath(path)
 
-    def clearSVNInfo(self, path):
+    def clearSVNInfo(self, path=None):
+        if path is None:
+            self._svn = defaultdict(default_factory=_STATUS_ENTRY)
 
-        if path in self._svn:
+        elif path in self._svn:
             del self._svn[path]
 
         self.refreshPath(path)
@@ -235,8 +245,17 @@ class SVNFileSystemModel(QFileSystemModel):
 
 
 
+from utils import plume_svn
+
+# ps = plume_svn.PlumeSvn("/home/lukhe/temp/naboo_svn/Sandbox", "https://svn.naboo/Sandbox")
+# ps = plume_svn.PlumeSvn("/home/lukhe/temp/naboo_svn/Sandbox2", "https://svn.naboo/Sandbox2")
+# ps = plume_svn.PlumeSvn("/home/lukhe/projets/dev/plume-tatooine-wc/Sandbox", "https://svn.tatooine/Sandbox")
+
 
 ROOT_DIR = "/home/lukhe/temp/PlumeTest"
+ps = plume_svn.PlumeSvn("/home/lukhe/temp/PlumeTest", "https://svn.hedwidge.local/PlumeTest")
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -249,8 +268,8 @@ class MainWindow(QMainWindow):
         self.model = SVNFileSystemModel()
         root_index = self.model.setRootPath(ROOT_DIR)
 
-        self.model.setSVNInfo("/home/lukhe/temp/PlumeTest/projects/Velotoubo/trunk/Guidon.FCStd", revision="58", status="modified")
-
+        for s in ps.status(".", verbose=True):
+            self.model.setSVNInfo(s)
         # Création de la vue
         self.tree = QTreeView()
         self.tree.setModel(self.model)
