@@ -39,6 +39,18 @@ class LocalClient(svn.common.CommonClient):
     def __repr__(self):
         return '<SVN(LOCAL) %s>' % self.path
 
+
+    def mkdir(self, rel_path, parents=False):
+        args = [rel_path]
+
+        if parents is True:
+            args.append('--parents')
+
+        self.run_command(
+            'mkdir',
+            args,
+            wd=self.path)
+
     def add(self, rel_path, do_include_parents=False):
         args = [rel_path]
 
