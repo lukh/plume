@@ -2,11 +2,14 @@ from enum import IntEnum
 from collections import defaultdict
 
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeView, QListView
-from PyQt6.QtCore import QDir, Qt, QModelIndex
-from PyQt6.QtGui import QColor, QFileSystemModel
+from PySide6.QtWidgets import QApplication, QWidget, QTreeView, QListView, QVBoxLayout, QFileSystemModel
+from PySide6.QtCore import QDir, Qt, QModelIndex
+from PySide6.QtGui import QColor
 
-from svn.local import _STATUS_ENTRY
+from PySide6.QtCore import Qt
+
+from freecad.plume.svn.local import _STATUS_ENTRY
+from freecad.plume.utils import plume_svn
 
 
 # class SVNRoles(IntEnum):
@@ -231,7 +234,6 @@ class SVNFileSystemModel(QFileSystemModel):
 
 
 
-from utils import plume_svn
 
 # ps = plume_svn.PlumeSvn("/home/lukhe/temp/naboo_svn/Sandbox", "https://svn.naboo/Sandbox")
 # ps = plume_svn.PlumeSvn("/home/lukhe/temp/naboo_svn/Sandbox2", "https://svn.naboo/Sandbox2")
@@ -243,11 +245,10 @@ ps = plume_svn.PlumeSvn("/home/lukhe/temp/PlumeTest", "https://svn.hedwidge.loca
 
 
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+class MainWindow(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-        self.setWindowTitle("QFileSystemModel + QTreeView")
         self.resize(800, 600)
 
         # Création du modèle
@@ -256,6 +257,7 @@ class MainWindow(QMainWindow):
 
         for s in ps.status(".", verbose=True):
             self.model.setSVNInfo(s)
+
         # Création de la vue
         self.tree = QTreeView()
         self.tree.setModel(self.model)
@@ -267,12 +269,15 @@ class MainWindow(QMainWindow):
         # for col in range(4):
         #     self.tree.resizeColumnToContents(col)
 
-        self.setCentralWidget(self.tree)
+        l = QVBoxLayout()
+        l.addWidget(self.tree)
+
+        self.setLayout(l)
 
 
-app = QApplication(sys.argv)
+# app = QApplication(sys.argv)
 
-window = MainWindow()
-window.show()
+# window = MainWindow()
+# window.show()
 
-sys.exit(app.exec())
+# sys.exit(app.exec())

@@ -1,5 +1,8 @@
 import os
 
+from PySide6.QtCore import Qt
+
+
 import FreeCAD as App
 import FreeCADGui as Gui
 
@@ -156,6 +159,10 @@ class Plume(Gui.Workbench):
         # "Plume_LinkObjectToItem"
     ]
 
+    def __init__(self):
+        super().__init__()
+        self._subwin = None  # Store reference to MDI subwindow
+
 
     def GetClassName(self):
         return "Gui::PythonWorkbench"
@@ -183,14 +190,16 @@ class Plume(Gui.Workbench):
         self.appendMenu(translate("plume", "Project"), self.toolbox_project)
         self.appendMenu(translate("plume", "Object"), self.toolbox_object)
 
+
     def Activated(self):
         """
         code which should be computed when a user switch to this workbench
         """
-        pass
-        # from freecad.frameforge.ff_tools import translate
+        from PySide6.QtGui import QIcon
+        from PySide6.QtWidgets import QMdiArea
+        from freecad.plume.svntree import MainWindow
 
-        # App.Console.PrintMessage(translate("frameforge", "Workbench frameforge activated.") + "\n")
+        self.create_or_show_window(MainWindow)
 
     def Deactivated(self):
         """
@@ -210,5 +219,39 @@ class Plume(Gui.Workbench):
             "Plume_Lock",
             "Plume_Unlock",
         ])
+
+
+    
+    def create_or_show_window(self, widget_cls):
+        """Create the diff panel if it doesn't exist, or show/focus it if it does."""
+        # Create subwindow if it doesn't exist (was closed or never created)
+        if self._subwin is None:
+            self._create_window(widget_cls)
+        else:
+            # Show existing subwindow and bring to front
+            self._subwin.show()
+            self._subwin.raise_()
+            self._subwin.setFocus()
+        
+    def _create_window(self, widget_cls):
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QMdiArea
+
+        main = Gui.getMainWindow()
+        mdi = main.findChild(QMdiArea)
+    
+        w = widget_cls()
+    
+        self._subwin = mdi.addSubWindow(w)
+        self._subwin.setWindowTitle("Plume")
+#        self._subwindow.setWindowIcon(QIcon(os.path.join(ICONPATH, "Logo.svg")))
+        self._subwin.resize(900, 600)
+        self._subwin.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self._subwin.show()
+        
+        self._subwin.destroyed.connect(self._on_subwindow_closed)
+        
+    def _on_subwindow_closed(self):
+        self._subwin = None  # Reset reference so new one will be created on next activation
 
 Gui.addWorkbench(Plume())
