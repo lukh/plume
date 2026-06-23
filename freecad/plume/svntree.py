@@ -38,20 +38,6 @@ class SVNFileSystemModel(QFileSystemModel):
         super().__init__(parent)
 
         self._svn = defaultdict(_STATUS_ENTRY)
-        # {
-        #   path: {
-        #       "revision": "1542",
-        #       "status": "modified"
-        #   }
-        # }
-
-    # ---------------------------------------------------------
-    # Helpers
-    def svnRevision(self, path):
-        return self._svn.get(path, {}).get("revision", "")
-
-    def svnStatus(self, path):
-        return self._svn.get(path, {}).get("status", "")
 
     # ---------------------------------------------------------
     # Columns
