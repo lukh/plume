@@ -1,7 +1,7 @@
 from PySide import QtWidgets, QtCore
 
 from PySide.QtWidgets import QDialog, QGridLayout, QListWidget, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel
-from PySide.QtGui import QBrush, QColorConstants
+from PySide.QtGui import QBrush, QColorConstants, QColor
 
 import FreeCAD as App
 
@@ -81,8 +81,12 @@ class ManageSubversionWorkingCopiesDialog(QDialog):
 
 class CommitDialog(QDialog):
     COLOR_MAP = {
-        "unversioned":QColorConstants.Blue,
-        "modified":QColorConstants.Red,
+        "modified": QColor("#0066cc"),
+        "added": QColor("#009900"),
+        "deleted": QColor("#cc0000"),
+        "conflicted": QColor("#ff6600"),
+        "missing": QColor("#990099"),
+        "unversioned": QColor("#808080"),
     }
 
     def __init__(self, paths, *args, **kwargs):
