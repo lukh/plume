@@ -394,6 +394,10 @@ class PlumeSvn(object):
         if os.path.exists(os.path.join(self.working_copy, rel_proj_path)):
             raise PlumeSvnException(f"{rel_proj_path=} aldready exsist in {self.working_copy}")
 
+        if self.path_status(os.path.split(rel_proj_path)[0]).type_raw_name != "normal":
+            raise PlumeSvnException(f"{rel_proj_path=} is not in 'normal' state")
+
+
         os.makedirs(os.path.join(self.working_copy, rel_proj_path))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "trunk"))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "releases"))
@@ -402,7 +406,7 @@ class PlumeSvn(object):
 
         self.local_repo.add(f"{rel_proj_path}", do_include_parents=True)
         if commit:
-            self.local_repo.commit(f"adding {rel_proj_path} structure")
+            self.local_repo.commit(f"adding {rel_proj_path} structure", rel_filepaths=[rel_proj_path])
 
 
     def release(self, rootpath, release_name, version, revision, sub_paths=[], commit_msg=None):
