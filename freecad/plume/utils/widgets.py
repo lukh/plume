@@ -79,7 +79,8 @@ class ManageSubversionWorkingCopiesDialog(QDialog):
 
 
 
-class CommitDialog(QDialog):
+
+class CommitListWidget(QListWidget):
     COLOR_MAP = {
         "modified": QColor("#0066cc"),
         "added": QColor("#009900"),
@@ -89,6 +90,18 @@ class CommitDialog(QDialog):
         "unversioned": QColor("#808080"),
     }
 
+    def addFile(self, path, status):
+        item = QListWidgetItem(path)
+        item.setCheckState(QtCore.Qt.Unchecked)
+        if status in self.COLOR_MAP:
+            item.setForeground(QBrush(self.COLOR_MAP[status]))
+        self.addItem(item)
+
+    def getSelectedPaths(self):
+        return [self.item(x).text() for x in range(self.count()) if self.item(x).checkState() == QtCore.Qt.Checked]
+
+
+class CommitDialog(QDialog):
     def __init__(self, paths, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -97,13 +110,9 @@ class CommitDialog(QDialog):
         layout = QGridLayout(self)
         self.setLayout(layout)
 
-        self.list_widget = QListWidget(self)
+        self.list_widget = CommitListWidget(self)
         for s, p in paths:
-            item = QListWidgetItem(p)
-            item.setCheckState(QtCore.Qt.Unchecked)
-            if s in self.COLOR_MAP:
-                item.setForeground(QBrush(self.COLOR_MAP[s]))
-            self.list_widget.addItem(item)
+            self.list_widget.addFile(p, s)
 
         layout.addWidget(QLabel('Files to commit', self), 0, 0)
         layout.addWidget(self.list_widget, 1, 0)
@@ -121,7 +130,7 @@ class CommitDialog(QDialog):
 
     def accept(self):
         commit_msg = self.text_edit.toPlainText()
-        paths_to_commit = [self.list_widget.item(x).text() for x in range(self.list_widget.count()) if self.list_widget.item(x).checkState() == QtCore.Qt.Checked]
+        paths_to_commit = self.list_widget.getSelectedPaths()
 
         if commit_msg == "" or len(paths_to_commit) == 0:
             return False
@@ -133,7 +142,7 @@ class CommitDialog(QDialog):
         dialog = CommitDialog(paths)
         retcode = dialog.exec_()
 
-        paths_to_commit = [dialog.list_widget.item(x).text() for x in range(dialog.list_widget.count()) if dialog.list_widget.item(x).checkState() == QtCore.Qt.Checked]
+        paths_to_commit = dialog.list_widget.getSelectedPaths()
         commit_msg = dialog.text_edit.toPlainText()
 
         return retcode == 1, paths_to_commit, commit_msg
