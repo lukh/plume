@@ -6,8 +6,9 @@ authors = [
     {name = "Vivien HENRY", email = "vivien.henry@inductivebrain.fr"}
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
+    "pyqt6 (>=6.11.0,<7.0.0)"
 ]
 
 [tool.poetry]
