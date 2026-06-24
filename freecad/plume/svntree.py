@@ -12,10 +12,6 @@ from freecad.plume.svn.local import _STATUS_ENTRY
 from freecad.plume.utils import plume_svn
 
 
-# class SVNRoles(IntEnum):
-#     RevisionRole = Qt.ItemDataRole.UserRole + 1
-#     StatusRole = Qt.ItemDataRole.UserRole + 2
-
 
 class SVNFileSystemModel(QFileSystemModel):
     REVISION_COLUMN = 0
@@ -115,16 +111,6 @@ class SVNFileSystemModel(QFileSystemModel):
 
         path = self.filePath(path_index)
         entry = self._svn[path]
-
-        # --------------------------------------
-        # Custom roles
-        # --------------------------------------
-
-        # if role == SVNRoles.RevisionRole:
-        #     return self.svnRevision(path)
-
-        # if role == SVNRoles.StatusRole:
-        #     return self.svnStatus(path)
 
         # --------------------------------------
         # Native columns
@@ -227,8 +213,6 @@ class SVNFileSystemModel(QFileSystemModel):
             [
                 Qt.ItemDataRole.DisplayRole,
                 Qt.ItemDataRole.ForegroundRole,
-                # SVNRoles.RevisionRole,
-                # SVNRoles.StatusRole,
             ]
         )
 
