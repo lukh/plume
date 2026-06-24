@@ -332,7 +332,7 @@ class PlumeSvn(object):
 
         if commit_msg is None:
             commit_msg = f"set externals for {rel_trunk_path}"
-        self.local_repo.commit(commit_msg)
+        self.local_repo.commit(commit_msg, rel_filepaths=[rel_trunk_path])
         self.local_repo.update([rel_trunk_path])
 
 
@@ -346,7 +346,6 @@ class PlumeSvn(object):
         if not os.path.isdir(dest_dir):
             os.makedirs(dest_dir)
             self.local_repo.add(dest_dir)
-            self.local_repo.commit(f"add {dest_dir} in {rel_trunk_path}", rel_filepaths=[dest_dir])
 
 
         externals_files = []
@@ -374,7 +373,7 @@ class PlumeSvn(object):
         if commit_msg is None:
             commit_msg = f"Add externals to {rel_root_path}"
 
-        self.local_repo.commit(commit_msg)
+        self.local_repo.commit(commit_msg, rel_filepaths=[rel_trunk_path])
         self.local_repo.update([rel_trunk_path])
 
 
