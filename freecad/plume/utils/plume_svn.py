@@ -22,9 +22,15 @@ class PlumeSvn(object):
         self.repo_url = repo_url
 
     def update(self, paths=[], revision=None):
+        """
+        update repository from server
+        """
         self.local_repo.update(rel_filepaths=[self.get_rel_path(p) for p in paths], revision=revision)
 
     def add(self, path):
+        """
+        add file or folder to svn
+        """
         path = self.get_rel_path(path)
         if self.is_path_switched(path): # TODO : can't be switched if not in repo ???
             raise PlumeSvnException(f'file {path} is switched')
@@ -32,6 +38,9 @@ class PlumeSvn(object):
         self.local_repo.add(rel_path=path)
 
     def commit(self, message, paths=[]):
+        """
+        commit files or folder
+        """
         for rf in paths:
             if self.is_path_switched(rf):
                 raise PlumeSvnException(f'file {rf} is switched')
@@ -39,18 +48,30 @@ class PlumeSvn(object):
         self.local_repo.commit(message, rel_filepaths=paths)
 
     def is_path_locked(self, rel_path):
+        """
+        return if path is locked (file or folder)
+        """
         ret = self.path_status(rel_path)
         return ret.locked
 
     def lock(self, paths=[], message=None):
+        """
+        lock files or folders
+        """
         for p in paths:
             self.local_repo.lock(self.get_rel_path(p), msg=message)
 
     def unlock(self, paths=[]):
+        """
+        unlock files or folders
+        """
         for p in paths:
             self.local_repo.unlock(self.get_rel_path(p))
 
     def get_abs_path(self, path):
+        """
+        absolutize path
+        """
         if not os.path.isabs(path):
             path = os.path.join(self.working_copy, path)
 
@@ -86,6 +107,9 @@ class PlumeSvn(object):
             return False
 
     def is_path_unversioned(self, path):
+        """
+        return if path (file) is unversionned
+        """
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
@@ -101,6 +125,9 @@ class PlumeSvn(object):
         return status.type_raw_name == "unversioned"
 
     def is_path_clean(self, path):
+        """
+        is path (file or folder) clean ?
+        """
         rel_path = self.get_rel_path(path)
 
         st_rep = list(self.local_repo.status(rel_path))
@@ -113,6 +140,9 @@ class PlumeSvn(object):
         return True
 
     def path_status(self, path):
+        """
+        get path status for one file or folder
+        """
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
@@ -127,6 +157,10 @@ class PlumeSvn(object):
         return status
 
     def status(self, path="", verbose=False):
+        """
+        get path status for files or folders
+        return a list of STATUS
+        """
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
@@ -142,6 +176,9 @@ class PlumeSvn(object):
         return self.repo_url + "/" + rp
 
     def is_trunk_path(self, rel_path):
+        """
+        Check if the existing file is in a trunk
+        """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
 
@@ -175,6 +212,9 @@ class PlumeSvn(object):
         return os.path.normpath(p)
 
     def is_release_path(self, rel_path):
+        """
+        Check if the existing file is in a release
+        """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
 
@@ -184,6 +224,11 @@ class PlumeSvn(object):
         return os.sep + 'releases' in rel_path
 
     def split_release_path(self, rel_path):
+        """
+        Split a path (from self.working_copy) to
+        [root_path]/release/[subpath]/[release_name]/[version].[revision]/[filename]
+        :ret : (rootpath, subpath, release_name, version, revision, filename)
+        """
         if not self.is_release_path(rel_path):
             raise PlumeSvnException(f"{rel_path} is not in a release")
 
@@ -205,10 +250,17 @@ class PlumeSvn(object):
 
 
     def get_release_path(self, rootpath, subpath, release_name, version, revision, filename):
+        """
+        get a release path from (rootpath, subpath, release_name, version, revision, filename)
+        """
         p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
         return os.path.normpath(p)
 
     def get_releases_available(self, rel_trunk_path, release_name=None):
+        """
+        get releases availables for a trunk path (file)
+        in the form of "version.revision"
+        """
         rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
         if release_name is None:
             release_name = os.path.splitext(filename)[0]
@@ -222,6 +274,9 @@ class PlumeSvn(object):
         return [d for d in os.listdir(releases_path) if os.path.isdir(os.path.join(releases_path, d))]
 
     def is_path_switched(self, rel_path):
+        """
+        returns if a path is switched
+        """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
 
@@ -236,6 +291,9 @@ class PlumeSvn(object):
         return status.switched
 
     def get_switched_path(self, rel_path):
+        """
+        return the switched (target) path of a file
+        """
         if not self.is_path_switched(rel_path):
             raise PlumeSvnException(f"{rel_path} is not switched")
 
@@ -278,6 +336,9 @@ class PlumeSvn(object):
 
 
     def is_path_external(self, rel_path):
+        """
+        return if a existing path is external
+        """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
 
@@ -337,6 +398,12 @@ class PlumeSvn(object):
 
 
     def add_externals(self, rel_root_path, dest_sub_dir, rel_targets_path, commit_msg=None):
+        """
+        add externals to a project
+        rel_root_path: path to project
+        dest_sub_dir : dest subdir, without the "trunk" prefix
+        rel_targets_path: relatives (to working copy) path for files to add
+        """
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
         if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
             raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
@@ -493,96 +560,3 @@ class PlumeSvn(object):
 
         self.local_repo.commit(commit_msg, rel_filepaths=[release_root_path])
 
-
-
-    # def tag_library_file(rel_path, tag_name, commit_msg=None):
-    #     """
-    #     Create a tag for a file in a subfolder (or in) 
-    #     LIBRARIES_ROOT/trunk
-
-    #     The tag will be in 
-    #     LIBRARIES_TOOT/tags/{rel_path without ext}/{tag_name}/{filename}
-    #     """
-    #     self.working_copy_trunk_path = os.path.join(LIBRARIES_ROOT, "trunk", rel_path)
-
-    #     # check existence of file
-    #     if not os.path.exists(os.path.join(self.working_copy, self.working_copy_trunk_path)):
-    #         raise ValueError(f"{rel_path} doesn't exist")
-
-    #     if not os.path.isfile(os.path.join(self.working_copy, self.working_copy_trunk_path)):
-    #         raise ValueError(f"{rel_path} is not a file")
-
-    #     # check file is up-to-date with the server
-    #     status = [s for s in self.local_repo.status(self.working_copy_trunk_path)]
-    #     if len(status) > 0:
-    #         raise Exception(f"{rel_path} is not up-to-date on the server: {status[0].type_raw_name}")
-
-    #     src_url = self.working_copy_trunk_path
-    #     # if not os.path.isfile(src_url):
-    #     #     raise Exception(f"{src_url} must be a file")
-
-    #     filename = os.path.basename(rel_path)
-    #     basename = os.path.splitext(filename)[0]
-    #     dirname = os.path.dirname(rel_path)
-        
-    #     tag_url = os.path.join(LIBRARIES_ROOT, "tags", dirname, basename, tag_name, filename)
-
-    #     if os.path.exists(os.path.join(self.working_copy, tag_url)):
-    #         raise Exception(f"{tag_url} already exists")
-
-    #     if not commit_msg:
-    #         commit_msg = f"Tagging project {rel_path}/{tag_name}"
-
-    #     self.remote_repo.copy(src_url, tag_url, commit_msg, make_parents=True)
-
-
-    # def tag_project(rel_path, tag_name, commit_msg=None):
-    #     """
-    #     Create a tag for a folder like 
-    #     PROJECTS_ROOT/rel_path/trunk
-
-    #     The tag will be in 
-    #     PROJECTS_ROOT/{rel_path}/tags/{tag_name}
-    #     """
-    #     self.working_copy_trunk_path = os.path.join(PROJECTS_ROOT, rel_path, "trunk")
-    #     print(self.working_copy_trunk_path)
-
-    #     # check existence of file
-    #     if not os.path.exists(os.path.join(self.working_copy, self.working_copy_trunk_path)):
-    #         raise ValueError(f"{rel_path} doesn't exist")
-
-    #     if not os.path.isdir(os.path.join(self.working_copy, self.working_copy_trunk_path)):
-    #         raise ValueError(f"{rel_path} is not a directory")
-
-    #     # check file is up-to-date with the server
-    #     status = [s for s in self.local_repo.status(self.working_copy_trunk_path)]
-    #     if len(status) > 0:
-    #         raise Exception(f"{rel_path} is not up-to-date on the server: {status[0].type_raw_name}")
-
-    #     src_url = self.working_copy_trunk_path
-    #     tag_url = os.path.join(PROJECTS_ROOT, rel_path, "tags", tag_name)
-    #     print(tag_url)
-
-    #     if os.path.exists(os.path.join(self.working_copy, tag_url)):
-    #         raise Exception(f"{tag_url} already exists")
-
-    #     if not commit_msg:
-    #         commit_msg = f"Tagging project {rel_path}/{tag_name}"
-
-    #     self.remote_repo.copy(src_url, tag_url, commit_msg, make_parents=True)
-
-
-
-# info = self.local_repo.info()
-# pprint.pprint(info)
-
-# initialize_repo()
-
-# create_project("MyAweSomeProject")
-# tag_project("MyAweSomeProject", "0.2")
-# tag_library_file("fasteners/MyFastener.FCStd", "0.2")
-
-# self.remote_repo.lock("projects/MyAweSomeProject/trunk/README.md")
-# self.remote_repo.unlock("projects/MyAweSomeProject/trunk/README.md")
-# self.local_repo.lock("projects/MyAweSomeProject/trunk/README.md")
-# self.local_repo.unlock("projects/MyAweSomeProject/trunk/README.md")
