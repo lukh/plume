@@ -2,27 +2,24 @@ from enum import IntEnum
 from collections import defaultdict
 
 import sys
-from PySide6.QtWidgets import QApplication, QWidget, QTreeView, QListView, QVBoxLayout, QFileSystemModel
+from PySide6.QtWidgets import QFileSystemModel
 from PySide6.QtCore import QDir, Qt, QModelIndex
 from PySide6.QtGui import QColor
-
-from PySide6.QtCore import Qt
 
 from freecad.plume.svn.local import _STATUS_ENTRY
 from freecad.plume.utils import plume_svn
 
 
-
 class SVNFileSystemModel(QFileSystemModel):
     REVISION_COLUMN = 0
     STATUS_COLUMN = 1
-    LAST_COMMIT_COLUMN = 3
-    LAST_AUTHOR_COLUMN = 4
-    SWITCHED_COLUMN = 5
-    LOCKED_COLUMN = 6
-    EXTERNAL_COLUMN = 7
+    LAST_COMMIT_COLUMN = 2
+    LAST_AUTHOR_COLUMN = 3
+    SWITCHED_COLUMN = 4
+    LOCKED_COLUMN = 5
+    EXTERNAL_COLUMN = 6
 
-    EXTRA_COLUMNS_COUNT = 8
+    EXTRA_COLUMNS_COUNT = 7
 
     STATUS_COLORS = {
         "modified": QColor("#0066cc"),
@@ -37,10 +34,6 @@ class SVNFileSystemModel(QFileSystemModel):
         super().__init__(parent)
 
         self._svn = defaultdict(_STATUS_ENTRY)
-
-    # ---------------------------------------------------------
-    # Columns
-    # ---------------------------------------------------------
 
     def columnCount(self, parent=QModelIndex()):
         return super().columnCount(parent) + self.EXTRA_COLUMNS_COUNT
@@ -92,10 +85,6 @@ class SVNFileSystemModel(QFileSystemModel):
             role
         )
 
-    # ---------------------------------------------------------
-    # Data
-    # ---------------------------------------------------------
-
     def data(self, index, role=Qt.ItemDataRole.DisplayRole):
 
         if not index.isValid():
@@ -112,15 +101,10 @@ class SVNFileSystemModel(QFileSystemModel):
         path = self.filePath(path_index)
         entry = self._svn[path]
 
-        # --------------------------------------
-        # Native columns
-        # --------------------------------------
 
         if index.column() < source_cols:
-            # Coloration du nom
             if (
                 role == Qt.ItemDataRole.ForegroundRole
-                # and index.column() == 0
             ):
 
                 status = entry.type_raw_name.lower()
@@ -130,9 +114,6 @@ class SVNFileSystemModel(QFileSystemModel):
 
             return super().data(index, role)
 
-        # --------------------------------------
-        # SVN columns
-        # --------------------------------------
 
         if role == Qt.ItemDataRole.DisplayRole:
 
@@ -166,9 +147,6 @@ class SVNFileSystemModel(QFileSystemModel):
 
         return None
 
-    # ---------------------------------------------------------
-    # API
-    # ---------------------------------------------------------
 
     def setSVNInfo(
         self,
@@ -215,53 +193,3 @@ class SVNFileSystemModel(QFileSystemModel):
                 Qt.ItemDataRole.ForegroundRole,
             ]
         )
-
-
-
-
-# ps = plume_svn.PlumeSvn("/home/lukhe/temp/naboo_svn/Sandbox", "https://svn.naboo/Sandbox")
-# ps = plume_svn.PlumeSvn("/home/lukhe/temp/naboo_svn/Sandbox2", "https://svn.naboo/Sandbox2")
-# ps = plume_svn.PlumeSvn("/home/lukhe/projets/dev/plume-tatooine-wc/Sandbox", "https://svn.tatooine/Sandbox")
-
-
-ROOT_DIR = "/home/lukhe/temp/PlumeTest"
-ps = plume_svn.PlumeSvn("/home/lukhe/temp/PlumeTest", "https://svn.hedwidge.local/PlumeTest")
-
-
-
-class MainWindow(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-
-        self.resize(800, 600)
-
-        # Création du modèle
-        self.model = SVNFileSystemModel()
-        root_index = self.model.setRootPath(ROOT_DIR)
-
-        for s in ps.status(".", verbose=True):
-            self.model.setSVNInfo(s)
-
-        # Création de la vue
-        self.tree = QTreeView()
-        self.tree.setModel(self.model)
-
-        # Dossier affiché au démarrage
-        self.tree.setRootIndex(root_index)
-
-        # Ajustement des colonnes
-        # for col in range(4):
-        #     self.tree.resizeColumnToContents(col)
-
-        l = QVBoxLayout()
-        l.addWidget(self.tree)
-
-        self.setLayout(l)
-
-
-# app = QApplication(sys.argv)
-
-# window = MainWindow()
-# window.show()
-
-# sys.exit(app.exec())

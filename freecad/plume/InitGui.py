@@ -197,9 +197,9 @@ class Plume(Gui.Workbench):
         """
         from PySide6.QtGui import QIcon
         from PySide6.QtWidgets import QMdiArea
-        from freecad.plume.svntree import MainWindow
+        from freecad.plume.utils.widgets import MainWidget
 
-        self.create_or_show_window(MainWindow)
+        self.create_or_show_window(MainWidget)
 
     def Deactivated(self):
         """

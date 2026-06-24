@@ -1,10 +1,13 @@
+import os
 from PySide import QtWidgets, QtCore
 
-from PySide.QtWidgets import QDialog, QGridLayout, QListWidget, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel
-from PySide.QtGui import QBrush, QColorConstants, QColor
+from PySide.QtWidgets import QDialog, QGridLayout, QListWidget, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout
+from PySide.QtGui import QBrush, QColorConstants, QColor, QIcon
 
 import FreeCAD as App
 
+from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
+from freecad.plume.utils.svnfilesystemmodel import SVNFileSystemModel
 
 class ManageSubversionWorkingCopiesDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -147,6 +150,54 @@ class CommitDialog(QDialog):
 
         return retcode == 1, paths_to_commit, commit_msg
 
+
+
+class MainWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.model = SVNFileSystemModel()
+
+        menu_layout = QHBoxLayout()
+
+        pb_update = QPushButton("Update")
+        pb_update.setIcon(QIcon(os.path.join(ICONPATH, "update.svg")))
+        menu_layout.addWidget(pb_update)
+
+        pb_commit = QPushButton("Commit")
+        pb_commit.setIcon(QIcon(os.path.join(ICONPATH, "commit.svg")))
+        menu_layout.addWidget(pb_commit)
+
+        pb_lock = QPushButton("Lock")
+        pb_lock.setIcon(QIcon(os.path.join(ICONPATH, "lock.svg")))
+        menu_layout.addWidget(pb_lock)
+
+        pb_unlock = QPushButton("Unlock")
+        pb_unlock.setIcon(QIcon(os.path.join(ICONPATH, "unlock.svg")))
+        menu_layout.addWidget(pb_unlock)
+
+        menu_widget = QWidget()
+        menu_widget.setLayout(menu_layout)
+
+        self.tree = QTreeView()
+        self.tree.setModel(self.model)
+
+        l = QVBoxLayout()
+        l.addWidget(menu_widget)
+        l.addWidget(self.tree)
+
+        self.setLayout(l)
+
+    def setRootDir(self, path):
+        root_index = self.model.setRootPath(ROOT_DIR)
+        self.tree.setRootIndex(root_index)
+
+    def refresh(self):
+        root_path = self.model.rootPath()
+        # TODO
+
+        # for s in ps.status(".", verbose=True):
+        #     self.model.setSVNInfo(s)
 
 
 def open_or_create_directory(log_dir, caption=""):
