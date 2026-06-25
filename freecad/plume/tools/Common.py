@@ -11,7 +11,7 @@ from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
 
 from freecad.plume.svn.exception import SvnException
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
-
+from freecad.plume.utils.selector import PlumeSelection
 
 def catch_svn(func):
         def wrapper(*args, **kwargs):
@@ -27,10 +27,9 @@ def catch_svn(func):
 class CommonCommand:
     def get_files_from_objects(self):
         sel = Gui.Selection.getSelection()
-        paths = []
+        paths = [obj.Document.FileName for obj in sel]
 
-        for obj in sel:
-            paths.append(obj.Document.FileName)
+        paths += [p for p in PlumeSelection.instance().getSelection() if os.path.isfile(p)]
 
         return list(set(paths))
 

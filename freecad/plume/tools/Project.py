@@ -80,10 +80,9 @@ class SwitchCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            root = sel[0]
-            root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            root_path = sel_paths[0]
             if not (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
@@ -94,7 +93,7 @@ class SwitchCommand(CommonCommand):
             ):
                 return False
 
-        elif len(sel) == 0:
+        elif len(sel_paths) == 0:
             # TODO open treewidget with filemodel
             return False
 
@@ -104,10 +103,9 @@ class SwitchCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            obj = sel[0]
-            abs_path = obj.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            abs_path = sel_paths[0]
             rel_path = svn.get_rel_path(abs_path)
 
             _, _, filename = svn.split_trunk_path(rel_path)
@@ -142,10 +140,9 @@ class UnswitchCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            root = sel[0]
-            root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            root_path = sel_paths[0]
             if not (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
@@ -166,11 +163,9 @@ class UnswitchCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            obj = sel[0]
-
-            abs_path = obj.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            abs_path = sel_paths[0]
             rel_path = svn.get_rel_path(abs_path)
 
             svn.unswitch(rel_path)
@@ -197,10 +192,9 @@ class ImportExternalCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            root = sel[0]
-            root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            root_path = sel_paths[0]
             if svn.is_in_repository(root_path) and svn.is_trunk_path(root_path):
                 return True
 
@@ -211,9 +205,8 @@ class ImportExternalCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        obj = sel[0]
-        doc_path = obj.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        doc_path = sel_paths[0]
 
         rel_root_path, _, _ = svn.split_trunk_path(svn.get_rel_path(doc_path))
         abs_root_path = svn.get_abs_path(rel_root_path)
@@ -262,10 +255,9 @@ class RemoveExternalCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            root = sel[0]
-            root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            root_path = sel_paths[0]
             if (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
@@ -282,9 +274,8 @@ class RemoveExternalCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        root = sel[0]
-        root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        root_path = sel_paths[0]
 
         rel_root_path, _, _ = svn.split_trunk_path(svn.get_rel_path(root_path))
         externals = svn.get_externals(rel_root_path)
@@ -313,7 +304,7 @@ class ReleaseCommand(CommonCommand):
 
     @catch_svn
     def IsActive(self):
-        sel = Gui.Selection.getSelection()
+        sel = Gui.Selection.getSelection() # here, the object is needed for future use
         if len(sel) != 1:
             return False
 

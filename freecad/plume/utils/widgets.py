@@ -1,13 +1,15 @@
 import os
 from PySide import QtWidgets, QtCore
 
-from PySide.QtWidgets import QDialog, QGridLayout, QListWidget, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout
+from PySide6.QtCore import QModelIndex
+from PySide.QtWidgets import QDialog, QGridLayout, QComboBox, QListWidget, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout
 from PySide.QtGui import QBrush, QColorConstants, QColor, QIcon
 
 import FreeCAD as App
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.svnfilesystemmodel import SVNFileSystemModel
+from freecad.plume.utils.selector import PlumeSelection
 
 class ManageSubversionWorkingCopiesDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -66,17 +68,11 @@ class ManageSubversionWorkingCopiesDialog(QDialog):
         self.list_widget.clear()
 
     def accept(self):
-        curr_item = self.list_widget.currentItem()
-        if curr_item is None:
-            return False
-
-        selected_path = curr_item.text()
-
         paths = [self.list_widget.item(x).text() for x in range(self.list_widget.count())]
 
         param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
         param.SetString("WorkingCopy Available Paths", ";".join(paths))
-        param.SetString("CurrentWorkingCopy", selected_path)
+        # param.SetString("CurrentWorkingCopy", selected_path)
 
         return super().accept()
 
@@ -152,35 +148,39 @@ class CommitDialog(QDialog):
 
 
 
+class DeselectableTreeView(QTreeView):
+    def mousePressEvent(self, event):
+        self.clearSelection()
+        QTreeView.mousePressEvent(self, event)
+
 class MainWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.model = SVNFileSystemModel()
 
+        self.tree = DeselectableTreeView()
+        self.tree.setModel(self.model)
+        self.tree.selectionModel().selectionChanged.connect(self.onTreeSelectionChanged)
+
+
+        self.workingcopies_combobox = QComboBox()
+        self.refreshWorkingCopies()
+        param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
+        self.workingcopies_combobox.activated.connect(lambda index : self.setRootDir(self.workingcopies_combobox.currentText()))
+        if not param.IsEmpty():
+            curr_wc = param.GetString("CurrentWorkingCopy")
+            if curr_wc:
+                index = self.workingcopies_combobox.findText(curr_wc)
+                if curr_wc != -1:
+                    self.workingcopies_combobox.setCurrentIndex(index)
+                    self.setRootDir(curr_wc)
+
+
         menu_layout = QHBoxLayout()
-
-        pb_update = QPushButton("Update")
-        pb_update.setIcon(QIcon(os.path.join(ICONPATH, "update.svg")))
-        menu_layout.addWidget(pb_update)
-
-        pb_commit = QPushButton("Commit")
-        pb_commit.setIcon(QIcon(os.path.join(ICONPATH, "commit.svg")))
-        menu_layout.addWidget(pb_commit)
-
-        pb_lock = QPushButton("Lock")
-        pb_lock.setIcon(QIcon(os.path.join(ICONPATH, "lock.svg")))
-        menu_layout.addWidget(pb_lock)
-
-        pb_unlock = QPushButton("Unlock")
-        pb_unlock.setIcon(QIcon(os.path.join(ICONPATH, "unlock.svg")))
-        menu_layout.addWidget(pb_unlock)
-
+        menu_layout.addWidget(self.workingcopies_combobox)
         menu_widget = QWidget()
         menu_widget.setLayout(menu_layout)
-
-        self.tree = QTreeView()
-        self.tree.setModel(self.model)
 
         l = QVBoxLayout()
         l.addWidget(menu_widget)
@@ -188,12 +188,45 @@ class MainWidget(QWidget):
 
         self.setLayout(l)
 
+    def onClose(self): # TODO
+        PlumeSelection.instance().resetTreeSelection()
+        
+    def refreshWorkingCopies(self):
+        self.workingcopies_combobox.clear()
+
+        param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
+        if not param.IsEmpty():
+            wcp = param.GetString("WorkingCopy Available Paths").split(';')
+
+        self.workingcopies_combobox.addItems(wcp)
+        PlumeSelection.instance().resetTreeSelection()
+
     def setRootDir(self, path):
-        root_index = self.model.setRootPath(ROOT_DIR)
+        param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
+        if param.IsEmpty() or (param.GetString("CurrentWorkingCopy") != path):
+            param.SetString("CurrentWorkingCopy", path)
+
+        root_index = self.model.setRootPath(path)
         self.tree.setRootIndex(root_index)
+        PlumeSelection.instance().resetTreeSelection()
+
+    def onTreeSelectionChanged(self, selected, deselected):
+        selector = PlumeSelection.instance()
+
+        indexes = selected.indexes()
+        if len(indexes) == 0:
+            selector.resetTreeSelection()
+        else:
+            path = self.model.filePath(indexes[0])
+            selector.setTreeSelection([path])
+
+
+        # if current_index is None:
+        # else:
 
     def refresh(self):
         root_path = self.model.rootPath()
+        PlumeSelection.instance().resetTreeSelection()
         # TODO
 
         # for s in ps.status(".", verbose=True):
