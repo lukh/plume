@@ -97,7 +97,7 @@ class InitializePlumeObjectCommand:
                 ).SvnSwicthed = ""
 
                 obj.addProperty(
-                    "App::PropertyLinkList",
+                    "App::PropertyStringList",
                     "ExportedSteps",
                     "Plume",
                     "ExportedSteps",
@@ -105,7 +105,7 @@ class InitializePlumeObjectCommand:
                 obj.setEditorMode("ExportedSteps", 1)  # user doesn't change !
 
                 obj.addProperty(
-                    "App::PropertyLinkList",
+                    "App::PropertyStringList",
                     "ExportedTechDrawPages",
                     "Plume",
                     "ExportedTechDrawPages",
@@ -113,7 +113,7 @@ class InitializePlumeObjectCommand:
                 obj.setEditorMode("ExportedTechDrawPages", 1)  # user doesn't change !
 
                 obj.addProperty(
-                    "App::PropertyLinkList",
+                    "App::PropertyStringList",
                     "ExportedCNCJobs",
                     "Plume",
                     "ExportedCNCJobs",
@@ -121,7 +121,7 @@ class InitializePlumeObjectCommand:
                 obj.setEditorMode("ExportedCNCJobs", 1)  # user doesn't change !
 
                 obj.addProperty(
-                    "App::PropertyLinkList",
+                    "App::PropertyStringList",
                     "ExportedDXFs",
                     "Plume",
                     "ExportedDXFs",
@@ -175,7 +175,7 @@ class EditExportedObjectsCommand:
 
         cat, ok = QInputDialog.getItem(None, "Add to", "Add objects to : ", ['ExportedSteps', 'ExportedTechDrawPages', 'ExportedDXFs', 'ExportedCNCJobs'])
         if ok:
-            setattr(root_obj, cat, sel)
+            setattr(root_obj, cat, [o.Name for o in sel])
 
 
 class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and rename Release to Tag... and allow a dry gen
@@ -253,7 +253,8 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
         categories = ['ExportedSteps', 'ExportedTechDrawPages', 'ExportedDXFs', 'ExportedCNCJobs']
 
         for exp_objects, cat in [(getattr(root_obj, c), c)for c in categories]:
-            for eo in exp_objects:
+            for eo_name in exp_objects:
+                eo = root_obj.Document.getObject(eo_name)
                 for (subpath, obj) in recursive_scan(eo):
                     file_dirpath = os.path.join(dest, subpath)
                     os.makedirs(file_dirpath, exist_ok=True)
