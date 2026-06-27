@@ -312,6 +312,9 @@ class ReleaseCommand(CommonCommand):
         if not hasattr(obj, "PlumeID"):
             return False
 
+        if obj.PlVersion == "" or obj.PlRevision == "":
+            return False
+
         root_path = obj.Document.FileName
 
         svn = self.svn()
@@ -340,21 +343,18 @@ class ReleaseCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
 
         root = sel[0]
-        if not hasattr(root, "PlumeID"):
-            QMessageBox.information(None, "Bad Object", "Selected object is not initialized with plume properties")
-            return
         abs_root_path = root.Document.FileName
         rel_root_path = svn.get_rel_path(abs_root_path)
 
         version = root.PlVersion
         revision = root.PlRevision
 
-        if version == "" or revision == "":
-            raise PlumeSvnException(f'{root.Label} : set version/revision')
-
         all_objects = list(traverse(root))
         related_objects = [o for o in all_objects if o != root]
 
+        # TODO : these five line should never trig.. remove them ?
+        if version == "" or revision == "":
+            raise PlumeSvnException(f'{root.Label} : set version/revision')
 
         if not svn.is_in_repository(abs_root_path):
             raise PlumeSvnException(f'{abs_root_path} : not in repo')
