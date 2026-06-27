@@ -538,7 +538,7 @@ class PlumeSvn(object):
 
 
         release_root_parent = os.path.split(release_root_path)[0]
-        if (not os.path.isdir(os.path.join(self.working_copy, release_root_parent))) or (self.path_status(release_root_parent).type_raw_name == "unversioned"):
+        if (not os.path.isdir(os.path.join(self.working_copy, release_root_parent))):
             self.local_repo.mkdir(release_root_parent, parents=True)
             self.local_repo.commit(f"add release folder for {release_name}", rel_filepaths=[release_root_parent])
 
