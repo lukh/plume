@@ -163,7 +163,7 @@ class EditExportedObjectsCommand:
 
     def IsActive(self):
         sel = Gui.Selection.getSelection()
-        if len(sel) > 1:
+        if len(sel) > 0:
             if hasattr(sel[0], "PlumeID"):
                 return True
     
