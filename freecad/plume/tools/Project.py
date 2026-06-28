@@ -352,23 +352,6 @@ class ReleaseCommand(CommonCommand):
         all_objects = list(traverse(root))
         related_objects = [o for o in all_objects if o != root]
 
-        # TODO : these five line should never trig.. remove them ?
-        if version == "" or revision == "":
-            raise PlumeSvnException(f'{root.Label} : set version/revision')
-
-        if not svn.is_in_repository(abs_root_path):
-            raise PlumeSvnException(f'{abs_root_path} : not in repo')
-
-        if not svn.is_trunk_path(rel_root_path):
-            raise PlumeSvnException(f'{rel_root_path} : not in trunk')
-
-        if svn.is_path_switched(rel_root_path):
-            raise PlumeSvnException(f'{rel_root_path} : switched')
-
-        if not svn.is_path_clean(rel_root_path):
-            raise PlumeSvnException(f'{rel_root_path} : not clean')
-
-
         rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
         release_name = os.path.splitext(filename)[0]
 
