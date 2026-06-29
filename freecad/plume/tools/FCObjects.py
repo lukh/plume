@@ -12,6 +12,7 @@ import TechDraw
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.widgets import open_or_create_directory
 from freecad.plume.tools.Common import CommonCommand, catch_svn
+from freecad.plume.utils.fc_utils import create_thumbnail
 
 class InitializePlumeObjectCommand:
     def GetResources(self):
@@ -245,13 +246,14 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
         root_obj = sel[0]
 
         abs_root_path = os.path.split(root_obj.Document.FileName)[0]
-        dest = os.path.join(abs_root_path, "exports")
+        dest = os.path.join(abs_root_path, "exports") # TODO : define an external folder (from WC) ? uncommited ?
 
+        # main shape
         os.makedirs(dest, exist_ok=True)
         root_obj.Shape.exportStep(os.path.join(dest, root_obj.Label + ".step"))
 
+        # exported objects (plans, etc)
         categories = ['ExportedSteps', 'ExportedTechDrawPages', 'ExportedDXFs', 'ExportedCNCJobs']
-
         for exp_objects, cat in [(getattr(root_obj, c), c)for c in categories]:
             for eo_name in exp_objects:
                 eo = root_obj.Document.getObject(eo_name)
@@ -286,6 +288,11 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
 
                         case 'ExportedCNCJobs':
                             pass # TODO...
+
+        # TODO : BOM, CSV ?
+
+        # Thumbnail 
+        create_thumbnail(root_obj.Document.FileName, dest)
 
 
 
