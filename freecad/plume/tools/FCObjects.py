@@ -85,7 +85,7 @@ class InitializePlumeObjectCommand:
                     "SvnStatus",
                     "Plume",
                     "SVN Status of the related file",
-                    1 + 2 + 8 + 16
+                    1 + 2 + 8 + 16 + 32
                 ).SvnStatus = ""
 
                 obj.addProperty(
@@ -93,7 +93,7 @@ class InitializePlumeObjectCommand:
                     "SvnSwicthed",
                     "Plume",
                     "SVN Switch to another file",
-                    1 + 2 + 8 + 16
+                    1 + 2 + 8 + 16 + 32
                 ).SvnSwicthed = ""
 
                 obj.addProperty(

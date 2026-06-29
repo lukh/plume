@@ -176,6 +176,7 @@ class Plume(Gui.Workbench):
         """
         from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
         from freecad.plume.tools import Repository, FCObjects, Project
+        from freecad.plume.utils.selector import SelectionObserver
 
         Gui.addIconPath(ICONPATH)
         Gui.addPreferencePage(os.path.join(UIPATH, "preferences.ui"),"Plume")
@@ -191,6 +192,9 @@ class Plume(Gui.Workbench):
         self.appendMenu(translate("plume", "Repository"), self.toolbox_repository)
         self.appendMenu(translate("plume", "Project"), self.toolbox_project)
         self.appendMenu(translate("plume", "Object"), self.toolbox_object)
+
+        s=SelectionObserver()
+        Gui.Selection.addObserver(s)
 
 
     def Activated(self):
