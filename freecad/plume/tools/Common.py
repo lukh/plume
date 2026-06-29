@@ -41,7 +41,7 @@ class CommonCommand:
         return all related object (root included)
         """
         def traverse(root):
-            if hasattr(root, "PlumeID"):
+            if hasattr(root, "PlumeIPN"):
                 yield root
             if hasattr(root, "Group"):
                 for obj in root.Group:

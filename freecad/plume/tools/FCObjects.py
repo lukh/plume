@@ -35,7 +35,7 @@ class InitializePlumeObjectCommand:
             return False
 
         for obj in sel:
-            if hasattr(obj, "PlumeID"):
+            if hasattr(obj, "PlumeIPN"):
                 return False
 
         return True
@@ -44,7 +44,7 @@ class InitializePlumeObjectCommand:
         sel = Gui.Selection.getSelection()
 
         for obj in sel:
-            if not hasattr(obj, "PlumeID"):
+            if not hasattr(obj, "PlumeIPN"):
                 obj.addProperty(
                     "App::PropertyString",
                     "PlVersion",
@@ -139,11 +139,11 @@ class InitializePlumeObjectCommand:
 
                 obj.addProperty(
                     "App::PropertyString",
-                    "PlumeID",
+                    "PlumeIPN",
                     "Plume",
                     "Unique Identifier for Plume",
-                ).PlumeID = str(uuid.uuid4())
-                obj.setEditorMode("PlumeID", 1)  # user doesn't change !
+                ).PlumeIPN = str(uuid.uuid4())
+                obj.setEditorMode("PlumeIPN", 1)  # user doesn't change !
 
 
 
@@ -165,7 +165,7 @@ class EditExportedObjectsCommand:
     def IsActive(self):
         sel = Gui.Selection.getSelection()
         if len(sel) > 0:
-            if hasattr(sel[0], "PlumeID"):
+            if hasattr(sel[0], "PlumeIPN"):
                 return True
     
         return False
@@ -201,7 +201,7 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
             return False
 
         obj = sel[0]
-        if not hasattr(obj, "PlumeID"):
+        if not hasattr(obj, "PlumeIPN"):
             return False
 
         if obj.PlVersion == "" or obj.PlRevision == "":

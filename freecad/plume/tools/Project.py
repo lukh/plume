@@ -324,7 +324,7 @@ class ReleaseCommand(CommonCommand):
             return False
 
         obj = sel[0]
-        if not hasattr(obj, "PlumeID"):
+        if not hasattr(obj, "PlumeIPN"):
             return False
 
         if obj.PlVersion == "" or obj.PlRevision == "":

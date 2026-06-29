@@ -36,7 +36,7 @@ class SelectionObserver:
             if wc_path:
                 document = App.getDocument(document)
                 object = document.getObject(object)
-                if hasattr(object, "PlumeID"):
+                if hasattr(object, "PlumeIPN"):
                     svn = PlumeSvn(wc_path)
                     status = svn.path_status(document.FileName)
                     object.SvnStatus = status.type_raw_name
