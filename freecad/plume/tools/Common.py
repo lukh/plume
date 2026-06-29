@@ -25,6 +25,9 @@ def catch_svn(func):
 
 
 class CommonCommand:
+    def log(self, msg):
+        App.Console.PrintMessage(f'Plume : {msg}\n')
+
     def get_files_from_objects(self):
         sel = Gui.Selection.getSelection()
         paths = [obj.Document.FileName for obj in sel]
@@ -32,6 +35,29 @@ class CommonCommand:
         paths += [p for p in PlumeSelection.instance().getSelection() if os.path.isfile(p)]
 
         return list(set(paths))
+
+    def get_related_objects(self, object):
+        """
+        return all related object (root included)
+        """
+        def traverse(root):
+            if hasattr(root, "PlumeID"):
+                yield root
+            if hasattr(root, "Group"):
+                for obj in root.Group:
+                    if hasattr(obj, "LinkedObject"):
+                        obj = obj.LinkedObject
+                    yield from traverse(obj)
+
+        return list(traverse(object))
+
+    def get_related_paths(self, object):
+        """
+        return all (absolute) paths related to an object
+        """
+        objects = list(self.get_related_objects(object))
+
+        return list(set([o.Document.FileName for o in objects]))
 
     def svn(self):
         pl_snv = None
