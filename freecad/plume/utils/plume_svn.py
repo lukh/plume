@@ -545,19 +545,37 @@ class PlumeSvn(object):
             self.local_repo.commit(f"add release folder for {release_name}", rel_filepaths=[release_root_top])
 
 
-
-        for tp, rel_p in internal_files: # switched files, and main root file
+        # switched files, and main root file
+        for tp, rel_p in internal_files: 
             # print("file to add: ", tp, rel_p)
             t_url = self.get_url(tp)
             self.local_repo.copy(t_url, rel_p, make_parents=True)
 
-        # TODO : add externals to release
+        # add externals to release
         if len(externals_files) > 0:
             self.local_repo.set_properties(
                 release_root_path, 
                 "svn:externals", 
                 "\n".join([" ".join(ef) for ef in externals_files])
             )
+
+        # manifest
+        manifest_file = os.path.join(release_root_path, "MANIFEST.md")
+        with open(manifest_file, "w") as manifest:
+            manifest.write(f"# {release_name}\n")
+            manifest.write(f"## {version}.{revision}\n")
+            manifest.write(f"\n")
+            manifest.write(f"Internal Files\n")
+            for int_file in internal_files:
+                manifest.write(f"- {os.path.relpath(int_file[1], start=release_root_path)} -> {int_file[0]}\n")
+            manifest.write(f"\n")
+
+            manifest.write(f"External Files\n")
+            for ext_file in externals_files:
+                manifest.write(f"- {ext_file[1]} -> {ext_file[0]}\n")
+            manifest.write(f"\n")
+        self.local_repo.add(manifest_file)
+
 
         if commit_msg is None:
             commit_msg = f"Release {release_name}:{version}.{revision}"
