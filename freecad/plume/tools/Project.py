@@ -400,14 +400,6 @@ class ReleaseCommand(CommonCommand):
             else:
                 pass
 
-            # if rp_rootpath != rootpath:
-            #     errors_msgs.append(f"{rp_rootpath} not in root object path")
-            #     release_ok = False
-            #     continue
-
-            # if (rp_rootpath, rp_subpath, rp_filename) not in related_paths:
-            #     related_paths.append((rp_rootpath, rp_subpath, rp_filename))
-
 
         filepaths = [filename]
         for p in related_paths:
@@ -422,7 +414,7 @@ class ReleaseCommand(CommonCommand):
             if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}') == QMessageBox.StandardButton.Yes:
                 svn.release(rootpath, subpath, release_name, version, revision, filepaths=filepaths)
 
-                QMessageBox.information(None, "Release ok", f'releasing ...\n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}')
+                QMessageBox.information(None, "Release ok", f'released : \n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}')
 
         else:
             QMessageBox.warning(None, "Can't release", "\n".join(errors_msgs))
