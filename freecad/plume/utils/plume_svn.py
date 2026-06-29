@@ -475,36 +475,37 @@ class PlumeSvn(object):
             self.local_repo.commit(f"adding {rel_proj_path} structure", rel_filepaths=[rel_proj_path])
 
 
-    def release(self, rootpath, release_name, version, revision, sub_paths=[], commit_msg=None):
+    def release(self, rootpath, subpath, release_name, version, revision, filepaths=[], commit_msg=None):
         """
         Release files or folder (project)
         :root_path : path to root folder (containing trunk, tags, releases and branches)
-        :tag_name : the name of the release
-        :subpaths : a list of (subpath, filename) (from the current trunk) to be released (file or folder/project)
-          or empty list (default) to release the folder
+        :sub_path : sub path (as in split trunk) from root_path to subpaths
+        :release_name : the name of the release
+        :filepaths : a list of filename (from the current trunk / subpath) to be released (file or folder/project)
+          or empty list (default) to release the folder (?)
 
         the subpath is reproduced inside the releases folder.
 
-        The first sub_paths element is the "main file", ie it must be unswitched
+        The first filepaths element is the "main file", ie it must be unswitched
         The others must be switched on a specific release
         """
 
         # check that the WC is clean
-        if not self.is_path_clean(self.get_trunk_path(rootpath)):
-            raise PlumeSvnException(f"{rootpath} is not clean")
+        # if not self.is_path_clean(self.get_trunk_path(rootpath)):
+        #     raise PlumeSvnException(f"{rootpath} is not clean")
 
-        release_root_path = self.get_release_path(rootpath, "", release_name, version, revision, "")
-        abs_release_root_path = os.path.join(self.working_copy,release_root_path)
+        release_root_path = self.get_release_path(rootpath, subpath, release_name, version, revision, "")
+        abs_release_root_path = os.path.join(self.working_copy, release_root_path)
         if os.path.isdir(abs_release_root_path):
             raise PlumeSvnException(f"{rootpath} release dir already exists")
 
-        filepaths = []
+        internal_files = []
         externals_files = []
 
         # check files are in order : first one is unswitched, others are
-        for idx, (sp, filename) in enumerate(sub_paths):
-            trunk_path = self.get_trunk_path(rootpath, sp, filename)
-            release_path = self.get_release_path(rootpath, sp, release_name, version, revision, filename)
+        for idx, filename in enumerate(filepaths):
+            trunk_path = self.get_trunk_path(rootpath, subpath, filename)
+            release_path = self.get_release_path(rootpath, subpath, release_name, version, revision, filename)
 
             if not os.path.isfile(self.get_abs_path(trunk_path)):
                 raise PlumeSvnException(f"{trunk_path} doesn't exist")
@@ -519,13 +520,13 @@ class PlumeSvn(object):
                     if switched:
                         raise PlumeSvnException(f"release: problem on file {trunk_path} : the main file is switched")
 
-                    filepaths.append((trunk_path, release_path))
+                    internal_files.append((trunk_path, release_path))
                 
                 else:
                     if not switched:
                         raise PlumeSvnException(f"release: problem on file {trunk_path} : sub file not switched")
 
-                    filepaths.append((self.get_switched_path(trunk_path), release_path))
+                    internal_files.append((self.get_switched_path(trunk_path), release_path))
             else:
                 sts = list(self.local_repo.info(trunk_path))
                 if len(sts) != 1:
@@ -540,9 +541,12 @@ class PlumeSvn(object):
         release_root_parent = os.path.split(release_root_path)[0]
         if (not os.path.isdir(os.path.join(self.working_copy, release_root_parent))):
             self.local_repo.mkdir(release_root_parent, parents=True)
-            self.local_repo.commit(f"add release folder for {release_name}", rel_filepaths=[release_root_parent])
+            release_root_top = self.get_release_path(rootpath, subpath.split(os.sep)[0] , "", "", "", "")
+            self.local_repo.commit(f"add release folder for {release_name}", rel_filepaths=[release_root_top])
 
-        for tp, rel_p in filepaths: # switched files, and main root file
+
+
+        for tp, rel_p in internal_files: # switched files, and main root file
             # print("file to add: ", tp, rel_p)
             t_url = self.get_url(tp)
             self.local_repo.copy(t_url, rel_p, make_parents=True)
