@@ -236,8 +236,8 @@ class Plume(Gui.Workbench):
         else:
             # Show existing subwindow and bring to front
             self._subwin.show()
-            self._subwin.raise_()
-            self._subwin.setFocus()
+            # self._subwin.raise_()
+            # self._subwin.setFocus()
         
     def _create_window(self, widget_cls):
         from PySide6.QtCore import Qt
