@@ -80,9 +80,10 @@ class SwitchCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel_paths = self.get_files_from_objects()
-        if len(sel_paths) == 1:
-            root_path = sel_paths[0]
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            root = sel[0]
+            root_path = root.Document.FileName
             if not (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
@@ -93,7 +94,7 @@ class SwitchCommand(CommonCommand):
             ):
                 return False
 
-        elif len(sel_paths) == 0:
+        elif len(sel) == 0:
             # TODO open treewidget with filemodel
             return False
 
@@ -103,10 +104,13 @@ class SwitchCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel_paths = self.get_files_from_objects()
-        if len(sel_paths) == 1:
-            abs_path = sel_paths[0]
-            rel_path = svn.get_rel_path(abs_path)
+        sel = Gui.Selection.getSelection()
+
+        if len(sel) == 1:
+            root = sel[0]
+
+            root_path = root.Document.FileName
+            rel_path = svn.get_rel_path(root_path)
 
             _, _, filename = svn.split_trunk_path(rel_path)
             releases = svn.get_releases_available(rel_path)
@@ -117,10 +121,14 @@ class SwitchCommand(CommonCommand):
 
                 release_name = os.path.splitext(filename)[0]
 
-                svn.switch(rel_path, release_name, version, revision)
+                for p in self.get_related_paths(root):
+                    rp = svn.get_rel_path(p)
+
+                    svn.switch(rp, release_name, version, revision)
+                    self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
 
                 App.closeDocument(os.path.splitext(filename)[0])
-                App.openDocument(abs_path)
+                App.openDocument(root_path)
 
 
 class UnswitchCommand(CommonCommand):
@@ -140,9 +148,10 @@ class UnswitchCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel_paths = self.get_files_from_objects()
-        if len(sel_paths) == 1:
-            root_path = sel_paths[0]
+        sel = Gui.Selection.getSelection()
+        if len(sel) == 1:
+            root = sel[0]
+            root_path = root.Document.FileName
             if not (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
@@ -163,15 +172,21 @@ class UnswitchCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel_paths = self.get_files_from_objects()
-        if len(sel_paths) == 1:
-            abs_path = sel_paths[0]
-            rel_path = svn.get_rel_path(abs_path)
+        sel = Gui.Selection.getSelection()
 
-            svn.unswitch(rel_path)
+        if len(sel) == 1:
+            root = sel[0]
 
-            App.closeDocument(os.path.splitext(os.path.split(abs_path)[1])[0])
-            App.openDocument(abs_path)
+            root_path = root.Document.FileName
+
+            for p in self.get_related_paths(root):
+                rp = svn.get_rel_path(p)
+                svn.unswitch(rp)
+
+                self.log(f"Unswitch {rp}")
+
+            App.closeDocument(os.path.splitext(os.path.split(root_path)[1])[0])
+            App.openDocument(root_path)
 
 
 
@@ -349,15 +364,13 @@ class ReleaseCommand(CommonCommand):
         version = root.PlVersion
         revision = root.PlRevision
 
-        all_objects = list(traverse(root))
-        related_objects = [o for o in all_objects if o != root]
+        related_paths = [ap for ap in self.get_related_paths(root) if ap != abs_root_path]
 
         rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
         release_name = os.path.splitext(filename)[0]
 
 
-        related_paths = []
-        for p in [o.Document.FileName for o in related_objects]:
+        for p in related_paths:
             rel_p = svn.get_rel_path(p)
             if not svn.is_in_repository(p):
                 errors_msgs.append(f"{p} not in repo")
@@ -387,25 +400,29 @@ class ReleaseCommand(CommonCommand):
             else:
                 pass
 
-            rp_rootpath, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
-            if rp_rootpath != rootpath:
-                errors_msgs.append(f"{rp_rootpath} not in root object path")
-                release_ok = False
-                continue
+            # if rp_rootpath != rootpath:
+            #     errors_msgs.append(f"{rp_rootpath} not in root object path")
+            #     release_ok = False
+            #     continue
 
-            if (rp_rootpath, rp_subpath, rp_filename) not in related_paths:
-                related_paths.append((rp_rootpath, rp_subpath, rp_filename))
+            # if (rp_rootpath, rp_subpath, rp_filename) not in related_paths:
+            #     related_paths.append((rp_rootpath, rp_subpath, rp_filename))
 
 
-        sub_paths = [(subpath, filename)]
-        for rp in related_paths:
-            sub_paths.append((subpath, os.path.join(rp[1], rp[2])))
+        filepaths = [filename]
+        for p in related_paths:
+            rel_p = svn.get_rel_path(p)
+            _, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
+
+            if rp_subpath:
+                rp_filename = os.path.join(os.path.relpath(rp_subpath, start=subpath), rp_filename)
+            filepaths.append(rp_filename)
 
         if release_ok:
-            if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, sp[0], sp[1]) for sp in sub_paths])}') == QMessageBox.StandardButton.Yes:
-                svn.release(rootpath, release_name, version, revision, sub_paths=sub_paths)
+            if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}') == QMessageBox.StandardButton.Yes:
+                svn.release(rootpath, subpath, release_name, version, revision, filepaths=filepaths)
 
-                QMessageBox.information(None, "Release ok", f'releasing ...\n{"\n".join([svn.get_trunk_path(rootpath, sp[0], sp[1]) for sp in sub_paths])}')
+                QMessageBox.information(None, "Release ok", f'releasing ...\n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}')
 
         else:
             QMessageBox.warning(None, "Can't release", "\n".join(errors_msgs))
