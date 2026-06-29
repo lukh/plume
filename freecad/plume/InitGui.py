@@ -242,6 +242,8 @@ class Plume(Gui.Workbench):
     def _create_window(self, widget_cls):
         from PySide6.QtCore import Qt
         from PySide6.QtWidgets import QMdiArea
+        from PySide.QtGui import QIcon
+        from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 
         main = Gui.getMainWindow()
         mdi = main.findChild(QMdiArea)
@@ -250,7 +252,7 @@ class Plume(Gui.Workbench):
     
         self._subwin = mdi.addSubWindow(w)
         self._subwin.setWindowTitle("Plume")
-#        self._subwindow.setWindowIcon(QIcon(os.path.join(ICONPATH, "Logo.svg")))
+        self._subwin.setWindowIcon(QIcon(os.path.join(ICONPATH, "plume.png")))
         self._subwin.resize(900, 600)
         self._subwin.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
         self._subwin.show()

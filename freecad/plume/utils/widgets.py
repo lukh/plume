@@ -11,6 +11,8 @@ from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.svnfilesystemmodel import SVNFileSystemModel
 from freecad.plume.utils.selector import PlumeSelection
 
+from freecad.plume.utils.plume_svn import PlumeSvn
+
 class ManageSubversionWorkingCopiesDialog(QDialog):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -177,9 +179,13 @@ class MainWidget(QWidget):
                     self.workingcopies_combobox.setCurrentIndex(index)
                     self.setRootDir(curr_wc)
 
+        self.refreshButton = QPushButton('Refresh')
+        self.refreshButton.clicked.connect(self.refresh)
+
 
         menu_layout = QHBoxLayout()
         menu_layout.addWidget(self.workingcopies_combobox)
+        menu_layout.addWidget(self.refreshButton)
         menu_widget = QWidget()
         menu_widget.setLayout(menu_layout)
 
@@ -211,6 +217,8 @@ class MainWidget(QWidget):
         self.tree.setRootIndex(root_index)
         PlumeSelection.instance().resetTreeSelection()
 
+        self.refresh()
+
     def onTreeSelectionChanged(self, selected, deselected):
         selector = PlumeSelection.instance()
 
@@ -221,17 +229,13 @@ class MainWidget(QWidget):
             path = self.model.filePath(indexes[0])
             selector.setTreeSelection([path])
 
-
-        # if current_index is None:
-        # else:
-
     def refresh(self):
         root_path = self.model.rootPath()
         PlumeSelection.instance().resetTreeSelection()
-        # TODO
 
-        # for s in ps.status(".", verbose=True):
-        #     self.model.setSVNInfo(s)
+        ps = PlumeSvn(root_path)
+        for s in ps.status(".", verbose=True):
+            self.model.setSVNInfo(s)
 
     def onTreeItemDoubleClicked(self, index):
         path = self.model.filePath(index)
