@@ -162,6 +162,7 @@ class MainWidget(QWidget):
         self.tree = DeselectableTreeView()
         self.tree.setModel(self.model)
         self.tree.selectionModel().selectionChanged.connect(self.onTreeSelectionChanged)
+        self.tree.doubleClicked.connect(self.onTreeItemDoubleClicked)
 
 
         self.workingcopies_combobox = QComboBox()
@@ -231,6 +232,11 @@ class MainWidget(QWidget):
 
         # for s in ps.status(".", verbose=True):
         #     self.model.setSVNInfo(s)
+
+    def onTreeItemDoubleClicked(self, index):
+        path = self.model.filePath(index)
+
+        App.openDocument(path)
 
 
 def open_or_create_directory(log_dir, caption=""):
