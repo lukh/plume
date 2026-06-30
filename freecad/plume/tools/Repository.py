@@ -6,13 +6,13 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, CommitDialog
+from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, RepositoryPreferencesDialog, CommitDialog
 
 from freecad.plume.tools.Common import CommonCommand, catch_svn
 
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
 
-class SubversionManageWorkingCopies:
+class SubversionManageWorkingCopiesCommand:
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "browse.svg"),
@@ -31,6 +31,28 @@ class SubversionManageWorkingCopies:
     @catch_svn
     def Activated(self):
         diag = ManageSubversionWorkingCopiesDialog()
+        diag.exec()
+
+
+class RepositoryPreferencesCommand(CommonCommand):
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "browse.svg"),
+            "MenuText": translate("Plume", "Repository preferences"),
+            "Accel": "P, M",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Edit repository global preferences</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    def IsActive(self):
+        return True
+
+    @catch_svn
+    def Activated(self):
+        diag = RepositoryPreferencesDialog(self.svn().working_copy)
         diag.exec()
 
 
@@ -210,7 +232,8 @@ class SubversionUnlockCommand(CommonCommand):
 
 
 
-Gui.addCommand("Plume_ManageWorkingCopies", SubversionManageWorkingCopies())
+Gui.addCommand("Plume_ManageWorkingCopies", SubversionManageWorkingCopiesCommand())
+Gui.addCommand("Plume_RepositoryPreferences", RepositoryPreferencesCommand())
 Gui.addCommand("Plume_Update", SubversionUpdateCommand())
 Gui.addCommand("Plume_Commit", SubversionCommitFileCommand())
 Gui.addCommand("Plume_Lock", SubversionLockCommand())

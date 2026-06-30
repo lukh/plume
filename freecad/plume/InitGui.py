@@ -138,6 +138,7 @@ class Plume(Gui.Workbench):
     toolbox_repository = [
         # "Plume_Connect",
         "Plume_ManageWorkingCopies",
+        "Plume_RepositoryPreferences",
         "Plume_Update",
         "Plume_Commit",
         "Plume_Lock",
