@@ -12,7 +12,6 @@ from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, Com
 from freecad.plume.tools.Common import CommonCommand, catch_svn
 
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
-from freecad.plume.utils.fc_utils import traverse
 
 class CreateProjectCommand(CommonCommand):
     def GetResources(self):
