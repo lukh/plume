@@ -87,13 +87,13 @@ class CommonCommand:
         repo_config = self.config()
 
         dest = None
-        if config['export_in_svn']:
-            if config['svn_export_mode'] == "subfolder":
+        if repo_config['export_in_svn']:
+            if repo_config['svn_export_mode'] == "subfolder":
                 dest = os.path.join(abs_root_path, repo_config["svn_export_subfolder"])
             else:
                 dest = os.path.join(svn.working_copy, repo_config["svn_export_rootfolder"], os.path.relpath(abs_root_path, start=svn.working_copy))
 
-        if config['export_in_inventree'] and dest is None:
+        if repo_config['export_in_inventree'] and dest is None:
             dest = os.path.join(abs_root_path, "inventree-exports") # TODO : define an external folder (from WC) ? uncommited ?
 
         return dest

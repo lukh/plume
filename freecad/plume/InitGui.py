@@ -157,7 +157,8 @@ class Plume(Gui.Workbench):
     toolbox_object = [
         "Plume_InitializeObject",
         "Plume_EditExportedObjects",
-        "Plume_BuildReleaseFiles"
+        "Plume_BuildReleaseFiles",
+        "Plume_ReleaseFiles"
         # "Plume_UpdateLinkToVersion",
         # "Plume_LinkObjectToItem"
     ]

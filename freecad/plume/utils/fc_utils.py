@@ -6,6 +6,7 @@ import sys
 import zipfile
 
 from PySide.QtWidgets import QInputDialog
+import FreeCAD as App
 
 def prepare_folder_for_export(start_path):
     """
@@ -97,8 +98,8 @@ def get_inventree_credentials(config):
 
     if url not in creds:
         user, ok = QInputDialog.getText(None, "Inventree user", f"User for {url}")
-        password, ok = QInputDialog.getText(None, "Inventree password", f"User for {url}")
-        token, ok = QInputDialog.getText(None, "Inventree token", f"User for {url}")
+        password, ok = QInputDialog.getText(None, "Inventree password", f"password for {url}")
+        token, ok = QInputDialog.getText(None, "Inventree token", f"token for {url}")
 
         creds[url] = {"user": user if user != "" else None, "password": password if password != "" else None, "token": token if token != "" else None}
 

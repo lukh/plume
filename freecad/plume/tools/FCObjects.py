@@ -51,6 +51,13 @@ class InitializePlumeObjectCommand:
             if not hasattr(obj, "PlumeIPN"):
                 obj.addProperty(
                     "App::PropertyString",
+                    "PlDescription",
+                    "Plume",
+                    "Description",
+                ).PlDescription = ""
+
+                obj.addProperty(
+                    "App::PropertyString",
                     "PlVersion",
                     "Plume",
                     "Version",
@@ -371,7 +378,7 @@ class ReleaseFilesCommand(CommonCommand):
 
         # push to Inventree
         username, password, token = get_inventree_credentials(repo_config)
-        pi = PlumeInventree(url, token=token, username=username, password=password, strict=False)
+        pi = PlumeInventree(repo_config['inventree_url'], token=token, username=username, password=password, strict=False)
 
         categories = pi.get_category_paths()
         category_path, ok = QInputDialog.getItem(None, "Select Category", "Category to create the Part", categories)
@@ -386,7 +393,7 @@ class ReleaseFilesCommand(CommonCommand):
         pi.create_part(
             root_obj.PlumeIPN,
             root_obj.Label,
-            root_obj.Comment,
+            root_obj.PlDescription,
             f"{root_obj.PlVersion}.{root_obj.PlRevision}",
             component=True,
             assembly=root_obj.PlType == "MechanicalAssembly",
@@ -397,6 +404,9 @@ class ReleaseFilesCommand(CommonCommand):
             category_path=category_path
         )
 
+        # if assembly : create a BOM...?
+
 Gui.addCommand("Plume_InitializeObject", InitializePlumeObjectCommand())
 Gui.addCommand("Plume_EditExportedObjects", EditExportedObjectsCommand())
 Gui.addCommand("Plume_BuildReleaseFiles", BuildReleaseFilesCommand())
+Gui.addCommand("Plume_ReleaseFiles", ReleaseFilesCommand())
