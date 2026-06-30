@@ -111,7 +111,7 @@ class InitializePlumeObjectCommand:
                     "SvnStatus",
                     "Plume",
                     "SVN Status of the related file",
-                    1 + 2 + 8 + 16 + 32
+                    1 + 2 + 8 + 16
                 ).SvnStatus = ""
 
                 obj.addProperty(
@@ -119,7 +119,7 @@ class InitializePlumeObjectCommand:
                     "SvnSwicthed",
                     "Plume",
                     "SVN Switch to another file",
-                    1 + 2 + 8 + 16 + 32
+                    1 + 2 + 8 + 16
                 ).SvnSwicthed = ""
 
                 obj.addProperty(
@@ -164,7 +164,7 @@ class InitializePlumeObjectCommand:
 
 
 
-class EditExportedObjectsCommand:
+class EditExportedObjectsCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
@@ -179,12 +179,27 @@ class EditExportedObjectsCommand:
             ),
         }
 
+    @catch_svn
     def IsActive(self):
         sel = Gui.Selection.getSelection()
         if len(sel) > 0:
             if hasattr(sel[0], "PlumeIPN"):
-                return True
-    
+                root = sel[0]
+                root_path = root.Document.FileName
+                if not (\
+                    svn.is_in_repository(root_path) and \
+                    svn.is_trunk_path(root_path) and \
+                    # svn.is_path_clean(root_path) and \
+                    (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
+                    (not svn.is_path_external(svn.get_rel_path(root_path))) and \
+                    (not svn.is_path_locked(svn.get_rel_path(root_path)))
+                ):
+                    return False
+
+                return Trye
+
+
+        # TODO if not trunk file... and switched... and locked...
         return False
 
     def Activated(self):
