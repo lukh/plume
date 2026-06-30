@@ -12,6 +12,7 @@ from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
 from freecad.plume.svn.exception import SvnException
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
 from freecad.plume.utils.selector import PlumeSelection
+from freecad.plume.utils.fc_utils import read_repo_config, write_repo_config
 
 def catch_svn(func):
         def wrapper(*args, **kwargs):
@@ -70,3 +71,31 @@ class CommonCommand:
                 App.Console.PrintMessage(translate("plume", f"Can't load working copy\n"))
 
         return pl_snv
+
+    def config(self):
+        param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
+        if not param.IsEmpty():
+            wc_path = param.GetString("CurrentWorkingCopy")
+            data = read_repo_config(wc_path)
+        else:
+            raise ValueError('Repo Config : file .plume.json not found')
+
+        return data
+
+    def get_export_dir(self, abs_root_path):
+        svn = self.svn()
+        repo_config = self.config()
+
+        dest = None
+        if config['export_in_svn']:
+            if config['svn_export_mode'] == "subfolder":
+                dest = os.path.join(abs_root_path, repo_config["svn_export_subfolder"])
+            else:
+                dest = os.path.join(svn.working_copy, repo_config["svn_export_rootfolder"], os.path.relpath(abs_root_path, start=svn.working_copy))
+
+        if config['export_in_inventree'] and dest is None:
+            dest = os.path.join(abs_root_path, "inventree-exports") # TODO : define an external folder (from WC) ? uncommited ?
+
+        return dest
+
+

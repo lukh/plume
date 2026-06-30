@@ -11,8 +11,10 @@ import TechDraw
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.widgets import open_or_create_directory
+from freecad.plume.utils.fc_utils import create_thumbnail, get_inventree_credentials
+from freecad.plume.utils.plume_inventree import PlumeInventree
+
 from freecad.plume.tools.Common import CommonCommand, catch_svn
-from freecad.plume.utils.fc_utils import create_thumbnail
 
 class InitializePlumeObjectCommand:
     def GetResources(self):
@@ -43,6 +45,8 @@ class InitializePlumeObjectCommand:
     def Activated(self):
         sel = Gui.Selection.getSelection()
 
+        # TODO : get or find PlumeIPN
+
         for obj in sel:
             if not hasattr(obj, "PlumeIPN"):
                 obj.addProperty(
@@ -63,14 +67,28 @@ class InitializePlumeObjectCommand:
                     "PlType",
                     "Plume",
                     "Plume Type",
-                ).PlType = ["MechanicalPart", "MechanicalAssembly", "OtherItem"]
+                ).PlType = ["MechanicalPart", "MechanicalAssembly"]
+
+                obj.addProperty(
+                    "App::PropertyEnumeration",
+                    "PlSourcing",
+                    "Plume",
+                    "Sourcing of the Part Object",
+                ).PlSourcing = ['Manufactured', 'Purchased']
 
                 obj.addProperty(
                     "App::PropertyBool",
-                    "PlManufactured",
+                    "PlVirtual",
                     "Plume",
-                    "Manufactured Object",
-                ).PlManufactured = True
+                    "Virtual Object : Software, Licence, Process ...",
+                ).PlVirtual = False
+
+                # obj.addProperty(
+                #     "App::PropertyBool",
+                #     "PlManufactured",
+                #     "Plume",
+                #     "Manufactured Object",
+                # ).PlManufactured = True
 
 
                 # 0 -- Prop_None, No special property attribute
@@ -128,14 +146,6 @@ class InitializePlumeObjectCommand:
                     "ExportedDXFs",
                 ).ExportedCNCJobs = []
                 obj.setEditorMode("ExportedDXFs", 1)  # user doesn't change !
-
-                obj.addProperty(
-                    "App::PropertyString",
-                    "InventreeID",
-                    "Plume",
-                    "Unique Identifier for Inventree",
-                ).InventreeID = ""
-                obj.setEditorMode("InventreeID", 1)  # user doesn't change !
 
                 obj.addProperty(
                     "App::PropertyString",
@@ -246,8 +256,11 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
         root_obj = sel[0]
 
         abs_root_path = os.path.split(root_obj.Document.FileName)[0]
-        dest = os.path.join(abs_root_path, "exports") # TODO : define an external folder (from WC) ? uncommited ?
-
+        dest = self.get_export_dir(abs_root_path)
+        if dest is None:
+            self.log('no dest for export !')
+            return
+        
         # main shape
         os.makedirs(dest, exist_ok=True)
         root_obj.Shape.exportStep(os.path.join(dest, root_obj.Label + ".step"))
@@ -297,6 +310,92 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
 
 
 
+class ReleaseFilesCommand(CommonCommand):
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
+            "MenuText": translate("Plume", "release export files"),
+            "Accel": "P, I",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>release files for a given object</b> \
+                    <br><br> \
+                    Select the Plume Object in the tree, and fire \
+                    </p></body></html>",
+            ),
+        }
+
+    @catch_svn
+    def IsActive(self):
+        sel = Gui.Selection.getSelection() # here, the object is needed for future use
+        if len(sel) != 1:
+            return False
+
+        obj = sel[0]
+        if not hasattr(obj, "PlumeIPN"):
+            return False
+
+        if obj.PlVersion == "" or obj.PlRevision == "":
+            return False
+
+        root_path = obj.Document.FileName
+
+        svn = self.svn()
+        if svn is None:
+            return False
+
+        if not (\
+            svn.is_in_repository(root_path) and \
+            svn.is_release_path(root_path) and \
+            # svn.is_path_clean(root_path) and \
+            (not svn.is_path_external(svn.get_rel_path(root_path))) and \
+            (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
+            (not svn.is_path_locked(svn.get_rel_path(root_path)))
+        ):
+            return False
+
+        return True
+
+    def Activated(self):
+        svn = self.svn()
+        repo_config = self.config()
+
+        sel = Gui.Selection.getSelection()
+        root_obj = sel[0]
+
+        abs_root_path = os.path.split(root_obj.Document.FileName)[0]
+        dest = self.get_export_dir(abs_root_path)
+        if dest is None:
+            self.log('no dest for export !')
+            return
+
+        # push to Inventree
+        username, password, token = get_inventree_credentials(repo_config)
+        pi = PlumeInventree(url, token=token, username=username, password=password, strict=False)
+
+        categories = pi.get_category_paths()
+        category_path, ok = QInputDialog.getItem(None, "Select Category", "Category to create the Part", categories)
+        if not ok:
+            return False
+
+        # commit
+        if repo_config['export_in_svn']:
+            svn.add(dest)
+            svn.commit(f"Add export for {root_obj.Document.FileName}", [dest])
+
+        pi.create_part(
+            root_obj.PlumeIPN,
+            root_obj.Label,
+            root_obj.Comment,
+            f"{root_obj.PlVersion}.{root_obj.PlRevision}",
+            component=True,
+            assembly=root_obj.PlType == "MechanicalAssembly",
+            purchaseable=root_obj.PlSourcing == "Purchased",
+            salable=False,
+            virtual=root_obj.PlVirtual,
+            attachment_folder=dest,
+            category_path=category_path
+        )
 
 Gui.addCommand("Plume_InitializeObject", InitializePlumeObjectCommand())
 Gui.addCommand("Plume_EditExportedObjects", EditExportedObjectsCommand())
