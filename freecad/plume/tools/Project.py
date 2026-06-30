@@ -35,12 +35,12 @@ class CreateProjectCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        abs_root_path = QFileDialog.getExistingDirectory(None, "Select destination folder of the project", "")
-        if not abs_root_path:
-            return
-
         project_name, ok = QInputDialog.getText(None, "Project Folder Name", "Project Name/Folder")
         if not ok:
+            return
+
+        abs_root_path = QFileDialog.getExistingDirectory(None, "Select destination folder of the project", svn.working_copy)
+        if not abs_root_path:
             return
 
         abs_path = os.path.join(abs_root_path, project_name)
