@@ -163,6 +163,9 @@ class SubversionLockCommand(CommonCommand):
             if not svn.is_in_repository(p):
                 return False
 
+            if not svn.is_trunk_path(p):
+                return False
+
             if not svn.is_path_clean(p):
                 return False
 
@@ -209,6 +212,9 @@ class SubversionUnlockCommand(CommonCommand):
 
         for p in paths:
             if not svn.is_in_repository(p):
+                return False
+
+            if not svn.is_trunk_path(p):
                 return False
 
             if not svn.is_path_clean(p):
