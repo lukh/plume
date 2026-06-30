@@ -108,7 +108,7 @@ class LocalClient(svn.common.CommonClient):
             [],
             wd=self.path)
 
-    def status(self, rel_path=None, verbose=False):
+    def status(self, rel_path=None, verbose=False, depth=None):
         path = self.path
         if rel_path is not None:
             path += '/' + rel_path
@@ -116,6 +116,9 @@ class LocalClient(svn.common.CommonClient):
         args = ['--xml']
         if verbose:
             args.append('-v')
+
+        if depth in ['empty', 'files', 'immediates', 'infinity']:
+            args += ['--depth', depth]
 
         args.append(path)
 

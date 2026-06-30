@@ -139,7 +139,7 @@ class PlumeSvn(object):
 
         return True
 
-    def path_status(self, path):
+    def path_status(self, path, depth=None):
         """
         get path status for one file or folder
         """
@@ -147,7 +147,7 @@ class PlumeSvn(object):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise PlumeSvnException(f"{rel_path} doesn't exist")
 
-        l = list(self.local_repo.status(rel_path))
+        l = list(self.local_repo.status(rel_path, depth=depth))
         if len(l) == 0:
             return svn.local._STATUS_ENTRY(name=rel_path)
         if len(l) > 1:
@@ -460,7 +460,7 @@ class PlumeSvn(object):
         if os.path.exists(os.path.join(self.working_copy, rel_proj_path)):
             raise PlumeSvnException(f"{rel_proj_path=} aldready exsist in {self.working_copy}")
 
-        if self.path_status(os.path.split(rel_proj_path)[0]).type_raw_name != "normal":
+        if self.path_status(os.path.split(rel_proj_path)[0], depth='empty').type_raw_name != "normal":
             raise PlumeSvnException(f"{rel_proj_path=} is not in 'normal' state")
 
 
@@ -560,7 +560,7 @@ class PlumeSvn(object):
             )
 
         # manifest
-        manifest_file = os.path.join(release_root_path, "MANIFEST.md")
+        manifest_file = os.path.join(abs_release_root_path, "MANIFEST.md")
         with open(manifest_file, "w") as manifest:
             manifest.write(f"# {release_name}\n")
             manifest.write(f"## {version}.{revision}\n")
