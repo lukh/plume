@@ -1,0 +1,308 @@
+# -*- coding: utf-8 -*-
+
+import logging
+import re
+
+import inventree.base
+import inventree.build
+import inventree.company
+import inventree.label
+import inventree.report
+import inventree.stock
+
+logger = logging.getLogger('inventree')
+
+
+class PartCategoryParameterTemplate(inventree.base.InventreeObject):
+    """A model which link a ParameterTemplate to a PartCategory"""
+
+    URL = 'part/category/parameters/'
+
+    def getCategory(self):
+        """Return the referenced PartCategory instance"""
+        return PartCategory(self._api, self.category)
+
+    def getTemplate(self):
+        """Return the referenced ParameterTemplate instance"""
+
+        template_id = getattr(self, 'template', None) or getattr(self, 'parameter_template', None)
+
+        if self._api.api_version < inventree.base.ParameterTemplate.MIN_API_VERSION:
+            # Return legacy PartParameterTemplate object
+            return PartParameterTemplate(self._api, template_id)
+
+        return inventree.base.ParameterTemplate(self._api, template_id)
+
+
+class PartCategory(inventree.base.MetadataMixin, inventree.base.InventreeObject):
+    """ Class representing the PartCategory database model """
+
+    URL = 'part/category/'
+    MODEL_TYPE = 'partcategory'
+
+    def getParts(self, **kwargs):
+        return Part.list(self._api, category=self.pk, **kwargs)
+
+    def getParentCategory(self):
+        if self.parent:
+            return PartCategory(self._api, self.parent)
+        else:
+            return None
+
+    def getChildCategories(self, **kwargs):
+        return PartCategory.list(self._api, parent=self.pk, **kwargs)
+
+    def getCategoryParameterTemplates(self, fetch_parent: bool = True) -> list:
+        """Fetch a list of default parameter templates associated with this category
+
+        Arguments:
+            fetch_parent: If True (default) include templates for parents also
+        """
+
+        return PartCategoryParameterTemplate.list(
+            self._api,
+            category=self.pk,
+            fetch_parent=fetch_parent
+        )
+
+
+class Part(
+    inventree.base.AttachmentMixin,
+    inventree.base.ParameterMixin,
+    inventree.base.BarcodeMixin,
+    inventree.base.MetadataMixin,
+    inventree.base.ImageMixin,
+    inventree.label.LabelPrintingMixin,
+    inventree.base.InventreeObject,
+):
+    """ Class representing the Part database model """
+
+    URL = 'part/'
+    MODEL_TYPE = 'part'
+
+    def getCategory(self):
+        """ Return the part category associated with this part """
+        return PartCategory(self._api, self.category)
+
+    def getTestTemplates(self):
+        """ Return all test templates associated with this part """
+        return PartTestTemplate.list(self._api, part=self.pk)
+
+    def getSupplierParts(self):
+        """ Return the supplier parts associated with this part """
+        if self.purchaseable:
+            return inventree.company.SupplierPart.list(self._api, part=self.pk)
+        else:
+            return list()
+
+    def getManufacturerParts(self):
+        """ Return the manufacturer parts associated with this part """
+        return inventree.company.ManufacturerPart.list(self._api, part=self.pk)
+
+    def getBomItems(self, **kwargs):
+        """ Return the items required to make this part """
+        return BomItem.list(self._api, part=self.pk, **kwargs)
+
+    def isUsedIn(self):
+        """ Return a list of all the parts this part is used in """
+        return BomItem.list(self._api, uses=self.pk)
+
+    def getBuilds(self, **kwargs):
+        """ Return the builds associated with this part """
+        return inventree.build.Build.list(self._api, part=self.pk, **kwargs)
+
+    def getStockItems(self, **kwargs):
+        """ Return the stock items associated with this part """
+        return inventree.stock.StockItem.list(self._api, part=self.pk, **kwargs)
+
+    def getParameters(self):
+        """ Return parameters associated with this part """
+
+        if self._api.api_version < inventree.base.Parameter.MIN_API_VERSION:
+            # Return legacy PartParameter objects
+            return PartParameter.list(self._api, part=self.pk)
+
+        return super().getParameters()
+
+    def getRelated(self):
+        """ Return related parts associated with this part """
+        return PartRelated.list(self._api, part=self.pk)
+
+    def getInternalPriceList(self):
+        """
+        Returns the InternalPrice list for this part
+        """
+
+        return InternalPrice.list(self._api, part=self.pk)
+
+    def setInternalPrice(self, quantity: int, price: float):
+        """
+        Set the internal price for this part
+        """
+
+        return InternalPrice.setInternalPrice(self._api, self.pk, quantity, price)
+
+    def getSalePrice(self):
+        """
+        Get sales prices for this part
+        """
+        return SalePrice.list(self._api, part=self.pk)[0].price
+
+    def getRequirements(self):
+        """
+        Get required amounts from requirements API endpoint for this part
+        """
+
+        # Set the url
+        URL = f"{self.URL}/{self.pk}/requirements/"
+
+        # Get data
+        return self._api.get(URL)
+
+
+class PartTestTemplate(inventree.base.MetadataMixin, inventree.base.InventreeObject):
+    """ Class representing a test template for a Part """
+
+    URL = 'part/test-template/'
+
+    @classmethod
+    def generateTestKey(cls, test_name):
+        """ Generate a 'key' for this test """
+
+        key = test_name.strip().lower()
+        key = key.replace(' ', '')
+
+        # Remove any characters that cannot be used to represent a variable
+        key = re.sub(r'[^a-zA-Z0-9]', '', key)
+
+        return key
+
+    def getTestKey(self):
+        """Return the 'key' for this test.
+
+        Note that after API v169, the 'key' parameter is also directly accessible
+        """
+
+        # Try to return the key - fall back to generateTestKey
+        try:
+            return self.key
+        except AttributeError:
+            return self.generateTestKey(self.test_name)
+
+
+class BomItem(
+    inventree.base.InventreeObject,
+    inventree.base.MetadataMixin,
+    inventree.report.ReportPrintingMixin,
+):
+    """ Class representing the BomItem database model """
+
+    URL = 'bom/'
+    MODEL_TYPE = 'bomitem'
+
+
+class BomItemSubstitute(
+    inventree.base.InventreeObject,
+    inventree.base.MetadataMixin,
+):
+    """Class representing the BomItemSubstitute database model"""
+
+    URL = "bom/substitute/"
+
+
+class InternalPrice(inventree.base.InventreeObject):
+    """ Class representing the InternalPrice model """
+
+    URL = 'part/internal-price/'
+
+    @classmethod
+    def setInternalPrice(cls, api, part, quantity: int, price: float):
+        """
+        Set the internal price for this part
+        """
+
+        data = {
+            'part': part,
+            'quantity': quantity,
+            'price': price,
+        }
+
+        # Send the data to the server
+        return api.post(cls.URL, data)
+
+
+class SalePrice(inventree.base.InventreeObject):
+    """ Class representing the SalePrice model """
+
+    URL = 'part/sale-price/'
+
+    @classmethod
+    def setSalePrice(cls, api, part, quantity: int, price: float, price_currency: str):
+        """
+        Set the sale price for this part
+        """
+
+        data = {
+            'part': part,
+            'quantity': quantity,
+            'price': price,
+            'price_currency': price_currency,
+        }
+
+        # Send the data to the server
+        return api.post(cls.URL, data)
+
+
+class PartRelated(inventree.base.InventreeObject):
+    """ Class representing a relationship between parts"""
+
+    URL = 'part/related/'
+
+    @classmethod
+    def add_related(cls, api, part1, part2):
+
+        if isinstance(part1, Part):
+            pk_1 = part1.pk
+        else:
+            pk_1 = int(part1)
+        if isinstance(part2, Part):
+            pk_2 = part2.pk
+        else:
+            pk_2 = int(part2)
+
+        data = {
+            'part_1': pk_1,
+            'part_2': pk_2,
+        }
+
+        # Send the data to the server
+        return api.post(cls.URL, data)
+
+
+class PartParameter(inventree.base.InventreeObject):
+    """Legacy class representing the PartParameter database model.
+
+    This has now been replaced with the generic Parameter model.
+
+    Ref: https://github.com/inventree/InvenTree/pull/10699
+    """
+    URL = 'part/parameter/'
+
+    MAX_API_VERSION = 428
+
+    def getunits(self):
+        """ Get the units for this parameter """
+
+        return self._data['template_detail']['units']
+
+
+class PartParameterTemplate(inventree.base.InventreeObject):
+    """Legacy class representing the PartParameterTemplate database model.
+
+    This has now been replaced with the generic ParameterTemplate model.
+
+    Ref: https://github.com/inventree/InvenTree/pull/10699
+    """
+
+    URL = 'part/parameter/template/'
+    MAX_API_VERSION = 428
