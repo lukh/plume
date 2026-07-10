@@ -108,26 +108,34 @@ class SwitchCommand(CommonCommand):
         if len(sel) == 1:
             root = sel[0]
 
-            root_path = root.Document.FileName
-            rel_path = svn.get_rel_path(root_path)
+            abs_root_path = root.Document.FileName
+            rel_root_path = svn.get_rel_path(abs_root_path)
 
-            _, _, filename = svn.split_trunk_path(rel_path)
-            releases = svn.get_releases_available(rel_path)
+            _, _, filename = svn.split_trunk_path(rel_root_path)
+            releases = svn.get_releases_available(rel_root_path)
 
-            release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_path}", releases)
+            release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_root_path}", releases)
             if ok:
                 version, revision = release.split(".")
 
                 release_name = os.path.splitext(filename)[0]
 
+                # TODO : Handles externals files in sub assembly (WIP)
+                # TODO : Handle if a file is remove/added between releases
                 for p in self.get_related_paths(root):
                     rp = svn.get_rel_path(p)
 
-                    svn.switch(rp, release_name, version, revision)
-                    self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
+                    if not svn.is_path_external(rp):
+                        if not svn.is_path_switched(rp):
+                            svn.switch(rp, release_name, version, revision) 
+                            self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
+                        else:
+                            self.log(f"Leave {rp} untouched, is not switched")
+                    else:
+                        self.log(f"Leave {rp} untouched, is external")
 
                 App.closeDocument(os.path.splitext(filename)[0])
-                App.openDocument(root_path)
+                App.openDocument(abs_root_path)
 
 
 class UnswitchCommand(CommonCommand):
@@ -178,11 +186,20 @@ class UnswitchCommand(CommonCommand):
 
             root_path = root.Document.FileName
 
+            # TODO : Handles externals files in sub assembly (WIP)
+            # TODO : Handle if a file is remove between releases
+
             for p in self.get_related_paths(root):
                 rp = svn.get_rel_path(p)
-                svn.unswitch(rp)
+                if not svn.is_path_external(rp):
+                    if svn.is_path_switched(rp):
+                        svn.unswitch(rp)
+                        self.log(f"Unswitch {rp}")
+                    else:
+                        self.log(f"Leave {rp} untouched, is not switched")
+                else:
+                    self.log(f"Leave {rp} untouched, is external")
 
-                self.log(f"Unswitch {rp}")
 
             App.closeDocument(os.path.splitext(os.path.split(root_path)[1])[0])
             App.openDocument(root_path)
