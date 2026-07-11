@@ -112,10 +112,10 @@ class PlumeSvn(object):
         """
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} is not a file")
+            raise OSError(f"{rel_path} is not a file")
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
@@ -145,7 +145,7 @@ class PlumeSvn(object):
         """
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         l = list(self.local_repo.status(rel_path, depth=depth))
         if len(l) == 0:
@@ -163,7 +163,7 @@ class PlumeSvn(object):
         """
         rel_path = self.get_rel_path(path)
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         return list(self.local_repo.status(rel_path, verbose=verbose))
 
@@ -180,10 +180,10 @@ class PlumeSvn(object):
         Check if the existing file is in a trunk
         """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} is not a file")
+            raise OSError(f"{rel_path} is not a file")
 
         return os.sep + 'trunk' in rel_path
 
@@ -216,10 +216,10 @@ class PlumeSvn(object):
         Check if the existing file is in a release
         """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} is not a file")
+            raise OSError(f"{rel_path} is not a file")
 
         return os.sep + 'releases' in rel_path
 
@@ -269,7 +269,7 @@ class PlumeSvn(object):
         releases_path = self.get_abs_path(os.path.normpath(p))
 
         if not os.path.isdir(releases_path):
-            raise PlumeSvnException(f"{releases_path} doesn't exist")
+            raise OSError(f"{releases_path} doesn't exist")
 
         return [d for d in os.listdir(releases_path) if os.path.isdir(os.path.join(releases_path, d))]
 
@@ -278,10 +278,10 @@ class PlumeSvn(object):
         returns if a path is switched
         """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} is not a file")
+            raise OSError(f"{rel_path} is not a file")
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
@@ -340,10 +340,10 @@ class PlumeSvn(object):
         return if a existing path is external
         """
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} doesn't exist")
+            raise OSError(f"{rel_path} doesn't exist")
 
         if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise PlumeSvnException(f"{rel_path} is not a file")
+            raise OSError(f"{rel_path} is not a file")
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
@@ -360,7 +360,7 @@ class PlumeSvn(object):
         """
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
         if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
-            raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
+            raise OSError(f"{rel_trunk_path} doesn't exist")
 
         props = self.local_repo.properties(rel_trunk_path)
         externals = {}
@@ -383,7 +383,7 @@ class PlumeSvn(object):
         """
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
         if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
-            raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
+            raise OSError(f"{rel_trunk_path} doesn't exist")
 
         self.local_repo.set_properties(
             rel_trunk_path , 
@@ -406,7 +406,7 @@ class PlumeSvn(object):
         """
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
         if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
-            raise PlumeSvnException(f"{rel_trunk_path} doesn't exist")
+            raise OSError(f"{rel_trunk_path} doesn't exist")
 
         dest_dir = os.path.join(self.get_abs_path(rel_trunk_path), dest_sub_dir)
 
@@ -458,10 +458,10 @@ class PlumeSvn(object):
         Commit the changes if commit arg
         """
         if os.path.exists(os.path.join(self.working_copy, rel_proj_path)):
-            raise PlumeSvnException(f"{rel_proj_path=} aldready exsist in {self.working_copy}")
+            raise OSError(f"{rel_proj_path=} aldready exsist in {self.working_copy}")
 
         if self.path_status(os.path.split(rel_proj_path)[0], depth='empty').type_raw_name != "normal":
-            raise PlumeSvnException(f"{rel_proj_path=} is not in 'normal' state")
+            raise OSError(f"{rel_proj_path=} is not in 'normal' state")
 
 
         os.makedirs(os.path.join(self.working_copy, rel_proj_path))
@@ -497,7 +497,7 @@ class PlumeSvn(object):
         release_root_path = self.get_release_path(rootpath, subpath, release_name, version, revision, "")
         abs_release_root_path = os.path.join(self.working_copy, release_root_path)
         if os.path.isdir(abs_release_root_path):
-            raise PlumeSvnException(f"{rootpath} release dir already exists")
+            raise OSError(f"{rootpath} release dir already exists")
 
         internal_files = []
         externals_files = []
@@ -508,9 +508,9 @@ class PlumeSvn(object):
             release_path = self.get_release_path(rootpath, subpath, release_name, version, revision, filename)
 
             if not os.path.isfile(self.get_abs_path(trunk_path)):
-                raise PlumeSvnException(f"{trunk_path} doesn't exist")
+                raise OSError(f"{trunk_path} doesn't exist")
             if os.path.isfile(self.get_abs_path(release_path)):
-                raise PlumeSvnException(f"{release_path} already exists")
+                raise OSError(f"{release_path} already exists")
 
             external = self.is_path_external(trunk_path)
             switched = self.is_path_switched(trunk_path)
