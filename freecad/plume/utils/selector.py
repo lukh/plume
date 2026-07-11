@@ -40,7 +40,7 @@ class SelectionObserver:
                     svn = PlumeSvn(wc_path)
                     status = svn.path_status(document.FileName)
                     object.SvnStatus = status.type_raw_name
-                    object.SvnSwicthed = str(status.switched)
+                    object.SvnSwitched = str(status.switched)
 
     def clearSelection(self,doc):
         pass
