@@ -1,7 +1,8 @@
 import os
+import json
 from collections import defaultdict
 
-from PySide.QtWidgets import QMessageBox
+from PySide.QtWidgets import QMessageBox, QInputDialog
 
 import FreeCAD as App
 import FreeCADGui as Gui
@@ -10,6 +11,7 @@ from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
 
 from freecad.plume.svn.exception import SvnException
+from freecad.plume.utils.plume_inventree import PlumeInventree
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
 from freecad.plume.utils.selector import PlumeSelection
 from freecad.plume.utils.fc_utils import read_repo_config, write_repo_config
@@ -71,6 +73,39 @@ class CommonCommand:
                 App.Console.PrintMessage(translate("plume", f"Can't load working copy\n"))
 
         return pl_snv
+
+
+
+    def inventree(self):
+        repo_config = self.config()
+        url = repo_config['inventree_url']
+
+        param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
+        if param.IsEmpty():
+            param.SetString("InvenTree Credentials", "")
+
+        raw_creds = param.GetString("InvenTree Credentials")
+        if raw_creds != "":
+            creds = json.loads(raw_creds)
+        else:
+            creds = {}
+
+        if url not in creds:
+            user, ok = QInputDialog.getText(None, "Inventree user", f"User for {url}")
+            password, ok = QInputDialog.getText(None, "Inventree password", f"password for {url}")
+            token, ok = QInputDialog.getText(None, "Inventree token", f"token for {url}")
+
+            creds[url] = {"user": user if user != "" else None, "password": password if password != "" else None, "token": token if token != "" else None}
+
+            param.SetString("InvenTree Credentials", json.dumps(creds))
+
+
+        user = creds[url]['user']
+        password = creds[url]['password']
+        token = creds[url]['token']
+
+        pi = PlumeInventree(repo_config['inventree_url'], token=token, username=user, password=password, strict=False)
+        return pi
 
     def config(self):
         param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")

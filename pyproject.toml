@@ -9,7 +9,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "pyqt6 (>=6.11.0,<7.0.0)",
-    "freecad-stubs (>=1.0.21,<2.0.0)"
+    "freecad-stubs (>=1.0.21,<2.0.0)",
+    "inventree (>=0.23.2,<0.24.0)",
 ]
 
 [tool.poetry]

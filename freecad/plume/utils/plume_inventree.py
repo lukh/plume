@@ -35,6 +35,18 @@ class PlumeInventree(object):
     def is_ipn_available(self, ipn):
         return len(Part.list(self.api, IPN=ipn)) == 0
 
+    def get_parts(self, ipn=None):
+        return Part.list(self.api, IPN=ipn)
+
+    def get_part(self, ipn, version, revision):
+        parts = Part.list(self.api, IPN=ipn, revision=f"{version}.{revision}")
+        if len(parts) == 0:
+            return None
+        elif len(parts) == 1:
+            return parts[0]
+        else:
+            raise Exception('error')
+
     def create_part(self,
         ipn, name, description, revision, 
         component, assembly, purchaseable, salable, virtual,

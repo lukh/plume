@@ -1,8 +1,8 @@
 import os
 from PySide import QtWidgets, QtCore
 
-from PySide6.QtCore import QModelIndex
-from PySide.QtWidgets import QDialog, QGridLayout, QComboBox, QListWidget, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout
+from PySide.QtCore import QModelIndex, Qt, Signal
+from PySide.QtWidgets import QDialog, QGridLayout, QComboBox, QListWidget, QLineEdit, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout, QCompleter
 from PySide.QtGui import QBrush, QColorConstants, QColor, QIcon
 
 import FreeCAD as App
@@ -262,6 +262,130 @@ class CommitDialog(QDialog):
         commit_msg = dialog.text_edit.toPlainText()
 
         return retcode == 1, paths_to_commit, commit_msg
+
+
+
+# from superqt
+class QSearchableListWidget(QWidget):
+    textChanged = Signal(str)
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.list_widget = QListWidget()
+        self.list_widget.currentTextChanged.connect(self.update_choice)
+        self.filter_widget = QLineEdit()
+        self.filter_widget.textChanged.connect(self.update_visible)
+        self.filter_widget.textChanged.connect(self.textChanged)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.filter_widget)
+        layout.addWidget(self.list_widget)
+        self.setLayout(layout)
+
+    def text(self):
+        return self.filter_widget.text()
+
+    def update_choice(self, text):
+        # self.filter_widget.blockSignals(True)
+        self.filter_widget.setText(text)
+        # self.filter_widget.blockSignals(False)
+
+
+    def update_visible(self, text):
+        self.list_widget.blockSignals(True)
+        items_text = [
+            x.text() for x in self.list_widget.findItems(text, Qt.MatchContains)
+        ]
+        for index in range(self.list_widget.count()):
+            item = self.list_widget.item(index)
+            item.setHidden(item.text() not in items_text)
+            item.setSelected(False)
+        self.list_widget.blockSignals(False)
+
+    def addItems(self, *args):
+        self.list_widget.addItems(*args)
+        self.update_visible(self.filter_widget.text())
+
+    def addItem(self, *args):
+        self.list_widget.addItem(*args)
+        self.update_visible(self.filter_widget.text())
+
+    def insertItems(self, *args):
+        self.list_widget.insertItems(*args)
+        self.update_visible(self.filter_widget.text())
+
+    def insertItem(self, *args):
+        self.list_widget.insertItem(*args)
+        self.update_visible(self.filter_widget.text())
+
+
+
+
+class InitializePlumeObjectDialog(QDialog):
+    def __init__(self, ipns, existing_only=False, part_type=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._ipns = ipns
+        self._existing_only = existing_only
+        self._state = (None, None, None, None)
+
+        self.setWindowTitle('Initialize Plume Object')
+
+        layout = QVBoxLayout(self)
+        self.setLayout(layout)
+
+        self.part_dbonly_cb = QCheckBox('DB Only')
+        if existing_only:
+            self.part_dbonly_cb.setChecked(True)
+            self.part_dbonly_cb.setEnabled(False)
+        self.list_widget = QSearchableListWidget()
+        self.list_widget.addItems(ipns)
+        self.list_widget.textChanged.connect(self.onIPNChanged)
+
+        self.part_type_cb = QComboBox()
+        self.part_type_cb.addItems(["MechanicalPart", "MechanicalAssembly"])
+        if part_type is not None:
+            self.part_type_cb.setCurrentText(part_type)
+
+        layout.addWidget(self.part_dbonly_cb)
+        layout.addWidget(QLabel('IPN'))
+        layout.addWidget(self.list_widget)
+        layout.addWidget(QLabel('Part Type'))
+        layout.addWidget(self.part_type_cb)
+
+        self.buttonBox = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+
+        layout.addWidget(self.buttonBox)
+
+    def onIPNChanged(self, ipn):
+        self.part_dbonly_cb.setChecked(ipn in self._ipns)
+        self.part_dbonly_cb.setEnabled(ipn not in self._ipns)
+
+    def accept(self):
+        db_only = self.part_dbonly_cb.isChecked()
+        ipn = self.list_widget.text()
+        new_ipn = ipn not in self._ipns
+
+        if self._existing_only and new_ipn:
+            return False
+
+        self._state = (db_only, new_ipn, ipn, self.part_type_cb.currentText())
+
+        super().accept()
+
+    def state(self):
+        return self._state
+
+    @staticmethod
+    def get_plume_object_infos(ipns, existing_only=False, part_type=None):
+        dialog = InitializePlumeObjectDialog(ipns, existing_only=existing_only, part_type=part_type)
+        retcode = dialog.exec_()
+
+        return retcode == 1, *dialog.state()
+
+
 
 
 
