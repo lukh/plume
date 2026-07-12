@@ -226,7 +226,7 @@ class InitializePlumeObjectCommand(CommonCommand):
             "App::PropertyString",
             "PlumeIPN",
             "Plume",
-            "Unique Identifier for Plume",
+            "Plume/Inventree Internal Part Number",
         ).PlumeIPN = ipn
         obj.setEditorMode("PlumeIPN", 1)  # user doesn't change !
 
@@ -303,7 +303,7 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
         if not hasattr(obj, "PlumeIPN"):
             return False
 
-        if obj.PlVersion == "" or obj.PlRevision == "":
+        if obj.PlDatabaseLink or obj.PlVersion == "" or obj.PlRevision == "":
             return False
 
         root_path = obj.Document.FileName
@@ -458,19 +458,52 @@ class ReleaseFilesCommand(CommonCommand):
             self.log('no dest for export !')
             return
 
-        # push to Inventree
         pi = self.inventree()
 
         categories = pi.get_category_paths()
         category_path, ok = QInputDialog.getItem(None, "Select Category", "Category to create the Part", categories)
         if not ok:
-            return False
+            return
+
+        # if root_obj is DBLink : ???
+
+        # root obj is in inventree
+        if pi.get_part(ipn=root_obj.PlumeIPN, version=root_obj.PlVersion, revision=root_obj.PlRevision) is not None:
+            self.log(f'root IPN/ver.rev already exists : {root_obj.PlumeIPN}, {root_obj.PlVersion}.{root_obj.PlRevision}')
+            QMessageBox.warning(None, "ERROR", f'root IPN/ver.rev already exists : {root_obj.PlumeIPN}, {root_obj.PlVersion}.{root_obj.PlRevision}')
+            return
+
+        # check that all childrens objects are valid and registered in Inventree : 
+        flight_check = True
+        err = ""
+        for _, p in self.get_children_objects(root_obj):
+            if pi.get_part(ipn=p.PlumeIPN, version=p.PlVersion, revision=p.PlRevision) is None:
+                flight_check = False
+                err += f'IPN/ver.rev is not in Inventree : {p.PlumeIPN}, {p.PlVersion}.{p.PlRevision}\n'
+
+        if not flight_check:
+            self.log(err)
+            QMessageBox.warning(None, "ERROR", err)
+            return
+
+
 
         # commit
-        if repo_config['export_in_svn']:
+        if not root_obj.PlDatabaseLink and repo_config['export_in_svn']:
             svn.add(dest)
             svn.commit(f"Add export for {root_obj.Document.FileName}", [dest])
 
+        # create a BOM.
+        bom = None
+        if root_obj.PlType == "MechanicalAssembly":  # TODO what about frameforge object ? are they assembly ?
+            bom = defaultdict(list)
+
+            for ref_id, p in self.get_children_objects(root_obj):
+                sub_part = pi.get_part(ipn=p.PlumeIPN, version=p.PlVersion, revision=p.PlRevision)
+                bom[sub_part.pk].append(ref_id)
+
+                
+        # push to Inventree
         pi.create_part(
             root_obj.PlumeIPN,
             root_obj.Label,
@@ -481,11 +514,10 @@ class ReleaseFilesCommand(CommonCommand):
             purchaseable=root_obj.PlSourcing == "Purchased",
             salable=False,
             virtual=root_obj.PlVirtual,
-            attachment_folder=dest,
-            category_path=category_path
+            attachment_folder=dest if ((not root_obj.PlDatabaseLink) and repo_config['export_in_inventree']) else None,
+            category_path=category_path,
+            bom=bom
         )
-
-        # TODO if assembly : create a BOM...?
 
 Gui.addCommand("Plume_InitializeObject", InitializePlumeObjectCommand())
 Gui.addCommand("Plume_EditExportedObjects", EditExportedObjectsCommand())
