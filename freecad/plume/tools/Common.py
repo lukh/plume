@@ -62,6 +62,23 @@ class CommonCommand:
 
         return list(set([o.Document.FileName for o in objects]))
 
+    def get_children_objects(self, object):
+        l = []
+        if hasattr(object, "Group"):
+            for obj in object.Group:
+                if hasattr(obj, "PlumeIPN"):
+                    if hasattr(obj, "LinkedObject"):
+                        if hasattr(obj, "PlumeID"):
+                            ref_id = obj.PlumeID
+                        elif hasattr(obj, "PID"):
+                            ref_id = obj.PID # FrameForge Id
+                        else:
+                            ref_id = "?"
+                        obj = obj.LinkedObject
+                    l.append((ref_id, obj))
+
+        return l
+
     def svn(self):
         pl_snv = None
         param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
