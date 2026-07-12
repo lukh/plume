@@ -46,10 +46,10 @@ class CreateProjectCommand(CommonCommand):
         abs_path = os.path.join(abs_root_path, project_name)
 
         if not svn.is_in_repository(abs_root_path):
-            QMessageBox.error(None, "Path Error", "Project not in repository")
+            QMessageBox.warning(None, "Path Error", "Project not in repository")
 
         if os.path.exists(abs_path):
-            QMessageBox.error(None, "Project already exists !", abs_path)
+            QMessageBox.warning(None, "Project already exists !", abs_path)
             return
 
         rel_path = svn.get_rel_path(abs_path)
@@ -127,10 +127,13 @@ class SwitchCommand(CommonCommand):
 
                     if not svn.is_path_external(rp):
                         if not svn.is_path_switched(rp):
-                            svn.switch(rp, release_name, version, revision) 
-                            self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
+                            try:
+                                svn.switch(rp, release_name, version, revision) 
+                                self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
+                            except OSError as e:
+                                self.log(f"Can't switch {rp} : {str(e)}")
                         else:
-                            self.log(f"Leave {rp} untouched, is not switched")
+                            self.log(f"Leave {rp} untouched, is switched")
                     else:
                         self.log(f"Leave {rp} untouched, is external")
 
@@ -193,8 +196,11 @@ class UnswitchCommand(CommonCommand):
                 rp = svn.get_rel_path(p)
                 if not svn.is_path_external(rp):
                     if svn.is_path_switched(rp):
-                        svn.unswitch(rp)
-                        self.log(f"Unswitch {rp}")
+                        try:
+                            svn.unswitch(rp)
+                            self.log(f"Unswitch {rp}")
+                        except OSError as e:
+                            self.log(f"Can't switch {rp} : {str(e)}")
                     else:
                         self.log(f"Leave {rp} untouched, is not switched")
                 else:
