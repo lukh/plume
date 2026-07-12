@@ -1,5 +1,5 @@
 from inventree.api import InvenTreeAPI
-from inventree.part import Part, PartCategory
+from inventree.part import Part, PartCategory, BomItem
 
 from freecad.plume.utils.fc_utils import prepare_folder_for_export
 
@@ -35,8 +35,8 @@ class PlumeInventree(object):
     def is_ipn_available(self, ipn):
         return len(Part.list(self.api, IPN=ipn)) == 0
 
-    def get_parts(self, ipn=None):
-        return Part.list(self.api, IPN=ipn)
+    def get_parts(self, ipn=None, active=True):
+        return Part.list(self.api, IPN=ipn, active=active)
 
     def get_part(self, ipn, version, revision):
         parts = Part.list(self.api, IPN=ipn, revision=f"{version}.{revision}")
@@ -51,7 +51,8 @@ class PlumeInventree(object):
         ipn, name, description, revision, 
         component, assembly, purchaseable, salable, virtual,
         attachment_folder = None,
-        category_path = None
+        category_path = None,
+        bom = None
     ):
         data = {
             "IPN":ipn,
@@ -85,5 +86,16 @@ class PlumeInventree(object):
 
         part = Part.create(self.api, data=data)
 
-        for path in prepare_folder_for_export(attachment_folder):
-            part.uploadAttachment(path)
+        # bom
+        if bom is not None:
+            for k in bom:
+                refs = bom [k]
+                BomItem.create(self.api, data={'part':part.pk, 'sub_part':k, 'quantity':len(refs), 'reference':', '.join(refs)})
+
+
+        # upload attachment
+        if attachment_folder is not None:
+            for path in prepare_folder_for_export(attachment_folder):
+                part.uploadAttachment(path)
+
+        return part
