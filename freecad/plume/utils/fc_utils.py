@@ -82,32 +82,3 @@ def write_repo_config(wc, data):
     with open(os.path.join(wc, ".plume.json"), "w") as fd:
         json.dump(data, fd, indent=4)
 
-
-def get_inventree_credentials(config):
-    url = config['inventree_url']
-
-    param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
-    if param.IsEmpty():
-        param.SetString("InvenTree Credentials", "")
-
-    raw_creds = param.GetString("InvenTree Credentials")
-    if raw_creds != "":
-        creds = json.loads(raw_creds)
-    else:
-        creds = {}
-
-    if url not in creds:
-        user, ok = QInputDialog.getText(None, "Inventree user", f"User for {url}")
-        password, ok = QInputDialog.getText(None, "Inventree password", f"password for {url}")
-        token, ok = QInputDialog.getText(None, "Inventree token", f"token for {url}")
-
-        creds[url] = {"user": user if user != "" else None, "password": password if password != "" else None, "token": token if token != "" else None}
-
-        param.SetString("InvenTree Credentials", json.dumps(creds))
-
-
-    user = creds[url]['user']
-    password = creds[url]['password']
-    token = creds[url]['token']
-
-    return user, password, token
