@@ -349,7 +349,7 @@ class InitializePlumeObjectDialog(QDialog):
         self.list_widget.textChanged.connect(self.onIPNChanged)
 
         self.part_type_cb = QComboBox()
-        self.part_type_cb.addItems(["MechanicalPart", "MechanicalAssembly"])
+        self.part_type_cb.addItems(["MechanicalPart", "MechanicalAssembly", "FrameForgeAssembly"])
         if part_type is not None:
             self.part_type_cb.setCurrentText(part_type)
 
@@ -389,8 +389,8 @@ class InitializePlumeObjectDialog(QDialog):
         return self._state
 
     @staticmethod
-    def get_plume_object_infos(ipns, existing_only=False, part_type=None):
-        dialog = InitializePlumeObjectDialog(ipns, existing_only=existing_only, part_type=part_type)
+    def get_plume_object_infos(ipns, existing_only=False, force_db_link=False, part_type=None, ipn_suggestion=None):
+        dialog = InitializePlumeObjectDialog(ipns, existing_only=existing_only, force_db_link=force_db_link, part_type=part_type, ipn_suggestion=ipn_suggestion)
         retcode = dialog.exec_()
 
         return retcode == 1, *dialog.state()

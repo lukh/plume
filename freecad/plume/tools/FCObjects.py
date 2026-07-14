@@ -15,6 +15,14 @@ from freecad.plume.utils.fc_utils import create_thumbnail, is_fastener, get_fast
 
 from freecad.plume.tools.Common import CommonCommand, catch_svn
 
+from freecad.frameforge.create_bom import (
+    group_links,
+    group_profiles,
+    make_bom,
+    make_cut_list,
+    traverse_assembly,
+)
+
 class InitializePlumeObjectCommand(CommonCommand):
     def GetResources(self):
         return {
@@ -92,7 +100,7 @@ class InitializePlumeObjectCommand(CommonCommand):
             self.log('cancelled by user')
             return
 
-        if part_type not in ["MechanicalPart", "MechanicalAssembly"]:
+        if part_type not in ["MechanicalPart", "MechanicalAssembly", "FrameForgeAssembly"]:
             self.log('Bad part type')
             return
 
@@ -127,7 +135,7 @@ class InitializePlumeObjectCommand(CommonCommand):
             "PlType",
             "Plume",
             "Plume Type",
-        ).PlType = ["MechanicalPart", "MechanicalAssembly"]
+        ).PlType = ["MechanicalPart", "MechanicalAssembly", "FrameForgeAssembly"]
         obj.PlType = part_type
 
         obj.addProperty(
@@ -248,7 +256,7 @@ class EditExportedObjectsCommand(CommonCommand):
                     # svn.is_path_clean(root_path) and \
                     (not svn.is_path_switched(svn.get_rel_path(root_path))) and \
                     (not svn.is_path_external(svn.get_rel_path(root_path))) and \
-                    (not svn.is_path_locked(svn.get_rel_path(root_path)))
+                    svn.is_path_locked(svn.get_rel_path(root_path))
                 ):
                     return False
 
@@ -479,21 +487,69 @@ class ReleaseFilesCommand(CommonCommand):
             return
 
 
+        # create a BOM.
+        bom = None
+
+        if root_obj.PlType in ["MechanicalAssembly", "FrameForgeAssembly"]:  # TODO what about frameforge object ? are they assembly ?
+            bom = {}
+            bom_subobjects = defaultdict(list)
+
+            for ref_id, p in self.get_children_objects(root_obj):
+                sub_part = pi.get_part(ipn=p.PlumeIPN, version=p.PlVersion, revision=p.PlRevision)
+                bom_subobjects[sub_part.pk].append(ref_id)
+
+            for sub_pk in bom_subobjects:
+                tot = len(bom_subobjects[sub_pk])
+                refs = bom_subobjects[sub_pk]
+
+                bom[sub_pk] = (tot, refs)
+
+            # case for frameforge profiles
+            if root_obj.PlType == "FrameForgeAssembly":  # TODO what about frameforge object ? are they assembly ?
+                profiles_data = []
+                links_data = []
+                traverse_assembly(
+                    profiles_data, links_data, root_obj, full_parent_path=False
+                )
+
+                profiles = defaultdict(list)
+                for p in profiles_data:
+                    key = (p["family"], p["material"], p["size_name"])
+                    fam, mat, sizename = key
+                    prof_ipn = f"{fam.upper()}_{mat[:5].upper()}_{sizename}".replace(" ", "_")
+                    profiles[prof_ipn].append((p['ID'], float(p['length'])))
+
+                for prof_ipn in profiles:
+                    prof_part = pi.get_part(prof_ipn, "#", "#")
+                    if prof_part is None:
+                        prof_category_path, ok = QInputDialog.getItem(None, f"Select Category", f"Category to create the profile :\n {prof_ipn}", categories)
+                        if not ok:
+                            self.log('cancelled by user')
+                            return
+
+                        prof_part = pi.create_part(
+                            prof_ipn,
+                            f"Profile {fam} {mat} {sizename}",
+                            "",
+                            "#.#",
+                            component=True,
+                            assembly=False,
+                            purchaseable=True,
+                            salable=False,
+                            virtual=False,
+                            category_path=prof_category_path,
+                            units = 'mm'
+                        )
+
+                    total_length = sum([p[1] for p in profiles[prof_ipn]])
+                    refs = [p[0] for p in profiles[prof_ipn]]
+
+                    bom[prof_part.pk] = (total_length, refs)
 
         # commit
         if not root_obj.PlDatabaseLink and repo_config['export_in_svn']:
             svn.add(dest)
             svn.commit(f"Add export for {root_obj.Document.FileName}", [dest])
-
-        # create a BOM.
-        bom = None
-        if root_obj.PlType == "MechanicalAssembly":  # TODO what about frameforge object ? are they assembly ?
-            bom = defaultdict(list)
-
-            for ref_id, p in self.get_children_objects(root_obj):
-                sub_part = pi.get_part(ipn=p.PlumeIPN, version=p.PlVersion, revision=p.PlRevision)
-                bom[sub_part.pk].append(ref_id)
-
                 
         # push to Inventree
         pi.create_part(
@@ -502,7 +558,7 @@ class ReleaseFilesCommand(CommonCommand):
             root_obj.PlDescription,
             f"{root_obj.PlVersion}.{root_obj.PlRevision}",
             component=True,
-            assembly=root_obj.PlType == "MechanicalAssembly",
+            assembly=root_obj.PlType in ["MechanicalAssembly", "FrameForgeAssembly"],
             purchaseable=root_obj.PlSourcing == "Purchased",
             salable=False,
             virtual=root_obj.PlVirtual,
