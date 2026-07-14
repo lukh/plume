@@ -13,18 +13,6 @@ class PlumeInventree(object):
 
     Shall we keep a valid list in the repository as well, of all the IPN used ?
     """
-    _instance = None
-
-    @classmethod
-    def instance(cls):
-        if cls._instance is None:
-            # TODO : guess adress from SVN address, and token... ?
-            adress = ""
-            token = ""
-
-            cls._instance = cls(adress, token, strict)
-        return cls._instance
-
     def __init__(self, adress, token=None, username=None, password=None, strict=True):
         self.api = InvenTreeAPI(adress, token=token, username=username, password=password, strict=strict)
 
@@ -39,7 +27,8 @@ class PlumeInventree(object):
         return Part.list(self.api, IPN=ipn, active=active)
 
     def get_part(self, ipn, version, revision):
-        parts = Part.list(self.api, IPN=ipn, revision=f"{version}.{revision}")
+        verrev=f"{version}.{revision}"
+        parts = [p for p in Part.list(self.api, IPN=ipn) if p.revision == verrev]
         if len(parts) == 0:
             return None
         elif len(parts) == 1:
@@ -52,6 +41,7 @@ class PlumeInventree(object):
         component, assembly, purchaseable, salable, virtual,
         attachment_folder = None,
         category_path = None,
+        units = None,
         bom = None
     ):
         data = {
@@ -65,6 +55,9 @@ class PlumeInventree(object):
             "salable":salable,
             "virtual":virtual
         }
+
+        if units is not None:
+            data['units'] = units
 
         # get the category
         if category_path is not None:
@@ -89,9 +82,8 @@ class PlumeInventree(object):
         # bom
         if bom is not None:
             for k in bom:
-                refs = bom [k]
-                BomItem.create(self.api, data={'part':part.pk, 'sub_part':k, 'quantity':len(refs), 'reference':', '.join(refs)})
-
+                (qty, refs) = bom[k]
+                BomItem.create(self.api, data={'part':part.pk, 'sub_part':k, 'quantity':qty, 'reference':', '.join(refs)})
 
         # upload attachment
         if attachment_folder is not None:
