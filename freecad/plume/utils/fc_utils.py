@@ -82,3 +82,36 @@ def write_repo_config(wc, data):
     with open(os.path.join(wc, ".plume.json"), "w") as fd:
         json.dump(data, fd, indent=4)
 
+
+
+def is_fastener(obj):
+    return hasattr(obj, "Invert") and hasattr(obj, "Type") and obj.Type !=""
+
+def get_fastener_name(obj):
+    if not is_fastener(obj):
+        return "Unknown"
+
+    fastener_type = obj.Type
+    dia = getattr(obj, "Diameter", "")
+    material = getattr(obj, "Material", "")
+    length = getattr(obj, 'Length', '') if getattr(obj, 'Length', '') != "Custom" else str(getattr(obj, 'LengthCustom', '')).replace(" mm", "")
+    name = ''.join([char for char in obj.Name if not char.isdigit()])
+
+    return f"{name}_{fastener_type}_{dia}_{length}_{material}"
+    
+
+def get_ipn_suggestion(obj):
+    try:
+        path = obj.Document.FileName
+        rootpath, subpath = path.split("/trunk/")
+        _, project = os.path.split(rootpath)
+        (subpath, filename) = os.path.split(subpath)
+
+
+        subname = "_".join([sp[:4].upper() for sp in subpath.split(os.sep)])
+        filename, _ = os.path.splitext(filename)
+
+        return f"{project[:6].upper()}_{subname}_{filename[5:].upper()}"
+
+    except:
+        return ""

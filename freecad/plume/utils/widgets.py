@@ -285,6 +285,9 @@ class QSearchableListWidget(QWidget):
     def text(self):
         return self.filter_widget.text()
 
+    def setText(self, txt):
+        return self.filter_widget.setText(txt)
+
     def update_choice(self, text):
         # self.filter_widget.blockSignals(True)
         self.filter_widget.setText(text)
@@ -322,11 +325,14 @@ class QSearchableListWidget(QWidget):
 
 
 class InitializePlumeObjectDialog(QDialog):
-    def __init__(self, ipns, existing_only=False, part_type=None, *args, **kwargs):
+    def __init__(self, ipns, existing_only=False, force_db_link=False, part_type=None, ipn_suggestion=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        print(f'{existing_only=}, {force_db_link=}')
 
         self._ipns = ipns
         self._existing_only = existing_only
+        self._force_db_link = force_db_link
         self._state = (None, None, None, None)
 
         self.setWindowTitle('Initialize Plume Object')
@@ -334,8 +340,8 @@ class InitializePlumeObjectDialog(QDialog):
         layout = QVBoxLayout(self)
         self.setLayout(layout)
 
-        self.part_dbonly_cb = QCheckBox('DB Only')
-        if existing_only:
+        self.part_dbonly_cb = QCheckBox('Inventree Link Only')
+        if existing_only or force_db_link:
             self.part_dbonly_cb.setChecked(True)
             self.part_dbonly_cb.setEnabled(False)
         self.list_widget = QSearchableListWidget()
@@ -359,9 +365,13 @@ class InitializePlumeObjectDialog(QDialog):
 
         layout.addWidget(self.buttonBox)
 
+        if ipn_suggestion is not None:
+            self.list_widget.setText(ipn_suggestion)
+
     def onIPNChanged(self, ipn):
-        self.part_dbonly_cb.setChecked(ipn in self._ipns)
-        self.part_dbonly_cb.setEnabled(ipn not in self._ipns)
+        if not self._force_db_link:
+            self.part_dbonly_cb.setChecked(ipn in self._ipns)
+            self.part_dbonly_cb.setEnabled(ipn not in self._ipns)
 
     def accept(self):
         db_only = self.part_dbonly_cb.isChecked()
