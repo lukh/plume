@@ -16,8 +16,12 @@ class PlumeInventree(object):
     def __init__(self, adress, token=None, username=None, password=None, strict=True):
         self.api = InvenTreeAPI(adress, token=token, username=username, password=password, strict=strict)
 
+
+    def get_categories(self, parent=None):
+        return PartCategory.list(self.api, parent=parent)
+
     def get_category_paths(self):
-        categories = PartCategory.list(self.api)
+        categories = self.get_categories()
         return [c.pathstring for c in categories]
 
     def is_ipn_available(self, ipn):

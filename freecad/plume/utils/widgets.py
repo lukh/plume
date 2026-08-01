@@ -9,7 +9,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-from freecad.plume.utils.svnfilesystemmodel import SVNFileSystemModel
+from freecad.plume.utils.svnstatusmodel import SvnStatusModel
 from freecad.plume.utils.selector import PlumeSelection
 
 from freecad.plume.utils.plume_svn import PlumeSvn
@@ -408,7 +408,7 @@ class MainWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.model = SVNFileSystemModel()
+        self.model = SvnStatusModel()
 
         self.tree = DeselectableTreeView()
         self.tree.setModel(self.model)
@@ -462,11 +462,9 @@ class MainWidget(QWidget):
         if param.IsEmpty() or (param.GetString("CurrentWorkingCopy") != path):
             param.SetString("CurrentWorkingCopy", path)
 
-        root_index = self.model.setRootPath(path)
-        self.tree.setRootIndex(root_index)
+        self.model.load(path)
         PlumeSelection.instance().resetTreeSelection()
 
-        self.refresh()
 
     def onTreeSelectionChanged(self, selected, deselected):
         selector = PlumeSelection.instance()
@@ -479,12 +477,8 @@ class MainWidget(QWidget):
             selector.setTreeSelection([path])
 
     def refresh(self):
-        root_path = self.model.rootPath()
         PlumeSelection.instance().resetTreeSelection()
-
-        ps = PlumeSvn(root_path)
-        for s in ps.status(".", verbose=True):
-            self.model.setSVNInfo(s)
+        self.model.refresh()
 
     def onTreeItemDoubleClicked(self, index):
         path = self.model.filePath(index)
