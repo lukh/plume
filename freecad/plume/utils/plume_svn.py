@@ -149,7 +149,7 @@ class PlumeSvn(object):
 
         l = list(self.local_repo.status(rel_path, depth=depth))
         if len(l) == 0:
-            return svn.local._STATUS_ENTRY(name=rel_path)
+            return svn.local._STATUS_ENTRY(path=rel_path, is_folder=os.path.isdir(os.path.join(self.working_copy, rel_path)))
         if len(l) > 1:
             raise PlumeSvnException(f"{rel_path} more than one entry")
         status = l[0]

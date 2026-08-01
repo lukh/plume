@@ -9,7 +9,8 @@ import svn.common
 _STATUS_ENTRY = \
     collections.namedtuple(
         '_STATUS_ENTRY', [
-            'name',
+            'filename',
+            'path',
             'type_raw_name',
             'type',
             'revision',
@@ -17,14 +18,17 @@ _STATUS_ENTRY = \
             'last_committed_author',
             'switched',
             'locked',
-            'external'
+            'external',
+            'is_folder'
         ], defaults=[
+            "",
             "",
             "normal",
             svn.constants.ST_NORMAL,
             None,
             None,
             None,
+            False,
             False,
             False,
             False
@@ -163,7 +167,8 @@ class LocalClient(svn.common.CommonClient):
             lock_status = wcstatus.find('lock') is not None
 
             yield _STATUS_ENTRY(
-                name=name,
+                filename=os.path.split(name)[1],
+                path=name,
                 type_raw_name=change_type_raw,
                 type=change_type,
                 revision=revision,
@@ -171,7 +176,8 @@ class LocalClient(svn.common.CommonClient):
                 last_committed_author=last_committed_author,
                 switched=switched,
                 locked=lock_status,
-                external=external
+                external=external,
+                is_folder=os.path.isdir(name)
             )
 
 
