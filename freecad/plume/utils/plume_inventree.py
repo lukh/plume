@@ -27,8 +27,8 @@ class PlumeInventree(object):
     def is_ipn_available(self, ipn):
         return len(Part.list(self.api, IPN=ipn)) == 0
 
-    def get_parts(self, ipn=None, active=True):
-        return Part.list(self.api, IPN=ipn, active=active)
+    def get_parts(self, ipn=None, active=True, category=None):
+        return Part.list(self.api, IPN=ipn, active=active, category=category)
 
     def get_part(self, ipn, version, revision):
         verrev=f"{version}.{revision}"
