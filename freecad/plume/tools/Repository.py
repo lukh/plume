@@ -121,7 +121,7 @@ class SubversionCommitFileCommand(CommonCommand):
         svn = self.svn()
         paths = [(svn.path_status(path).type_raw_name, path) for path in self.get_files_from_objects()]
         if len(paths) == 0:
-            paths = [(s.type_raw_name, s.name) for s in svn.status() if not s.switched]
+            paths = [(s.type_raw_name, s.path) for s in svn.status() if not s.switched]
 
         ok, paths_to_commit, message = CommitDialog.get_commit_infos(paths=paths)
 
