@@ -2,7 +2,7 @@ import os
 from PySide import QtWidgets, QtCore
 
 from PySide.QtCore import QModelIndex, Qt, Signal
-from PySide.QtWidgets import QDialog, QGridLayout, QComboBox, QListWidget, QLineEdit, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout, QCompleter
+from PySide.QtWidgets import QDialog, QGridLayout, QComboBox, QListWidget, QLineEdit, QPushButton, QFileDialog, QDialogButtonBox, QListWidgetItem, QCheckBox, QTextEdit, QLabel,  QWidget, QTreeView, QListView, QVBoxLayout, QHBoxLayout, QCompleter, QTabWidget
 from PySide.QtGui import QBrush, QColorConstants, QColor, QIcon
 
 import FreeCAD as App
@@ -10,10 +10,13 @@ import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
 from freecad.plume.utils.svnstatusmodel import SvnStatusModel
+from freecad.plume.utils.inventreemodel import InventreeModel
 from freecad.plume.utils.selector import PlumeSelection
 
 from freecad.plume.utils.plume_svn import PlumeSvn
 from freecad.plume.utils.fc_utils import read_repo_config, write_repo_config
+
+# from freecad.plume.tools.Common import CommonCommand
 
 class ManageSubversionWorkingCopiesDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -408,14 +411,25 @@ class MainWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.model = SvnStatusModel()
+        # SVN
+        self.svn_model = SvnStatusModel()
 
-        self.tree = DeselectableTreeView()
-        self.tree.setModel(self.model)
-        self.tree.selectionModel().selectionChanged.connect(self.onTreeSelectionChanged)
-        self.tree.doubleClicked.connect(self.onTreeItemDoubleClicked)
+        self.svn_tree = DeselectableTreeView()
+        self.svn_tree.setModel(self.svn_model)
+        self.svn_tree.selectionModel().selectionChanged.connect(self.onSVNTreeSelectionChanged)
+        self.svn_tree.doubleClicked.connect(self.onSVNTreeItemDoubleClicked)
 
 
+        # INVENTREE
+        self.inventree_model = InventreeModel()
+        self.inventree_tree = QTreeView()
+
+
+        # MENU
+        self.refreshButton = QPushButton('Refresh')
+        self.refreshButton.clicked.connect(self.refresh)
+        
+        # initialize
         self.workingcopies_combobox = QComboBox()
         self.refreshWorkingCopies()
         param = App.ParamGet("User parameter:BaseApp/Preferences/Plume")
@@ -428,21 +442,24 @@ class MainWidget(QWidget):
                     self.workingcopies_combobox.setCurrentIndex(index)
                     self.setRootDir(curr_wc)
 
-        self.refreshButton = QPushButton('Refresh')
-        self.refreshButton.clicked.connect(self.refresh)
-
-
         menu_layout = QHBoxLayout()
         menu_layout.addWidget(self.workingcopies_combobox)
         menu_layout.addWidget(self.refreshButton)
         menu_widget = QWidget()
         menu_widget.setLayout(menu_layout)
 
+
+        # MAIN Layout
+        toolbox = QTabWidget()
+        toolbox.addTab(self.svn_tree, "Working Copy")
+        toolbox.addTab(self.inventree_tree, "Inventree")
+
         l = QVBoxLayout()
         l.addWidget(menu_widget)
-        l.addWidget(self.tree)
+        l.addWidget(toolbox)
 
         self.setLayout(l)
+
 
     def onClose(self): # TODO
         PlumeSelection.instance().resetTreeSelection()
@@ -462,28 +479,32 @@ class MainWidget(QWidget):
         if param.IsEmpty() or (param.GetString("CurrentWorkingCopy") != path):
             param.SetString("CurrentWorkingCopy", path)
 
-        self.model.load(path)
+        self.svn_model.load(path)
         PlumeSelection.instance().resetTreeSelection()
 
+        # TODO : not ok because of circular import
+        # self.inventree_model.load(self.inventree())
 
-    def onTreeSelectionChanged(self, selected, deselected):
+
+    def onSVNTreeSelectionChanged(self, selected, deselected):
         selector = PlumeSelection.instance()
 
         indexes = selected.indexes()
         if len(indexes) == 0:
             selector.resetTreeSelection()
         else:
-            path = self.model.filePath(indexes[0])
+            path = self.svn_model.filePath(indexes[0])
             selector.setTreeSelection([path])
 
     def refresh(self):
         PlumeSelection.instance().resetTreeSelection()
-        self.model.refresh()
+        self.svn_model.refresh()
 
-    def onTreeItemDoubleClicked(self, index):
-        path = self.model.filePath(index)
+    def onSVNTreeItemDoubleClicked(self, index):
+        path = self.svn_model.filePath(index)
 
-        App.openDocument(path)
+        if os.path.splitext(path)[1] == ".FCStd":
+            App.openDocument(path)
 
 
 def open_or_create_directory(log_dir, caption=""):
