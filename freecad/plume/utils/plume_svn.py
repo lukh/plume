@@ -32,7 +32,7 @@ class PlumeSvn(object):
         add file or folder to svn
         """
         path = self.get_rel_path(path)
-        if self.is_path_switched(path): # TODO : can't be switched if not in repo ???
+        if self.is_path_switched(path):
             raise PlumeSvnException(f'file {path} is switched')
 
         self.local_repo.add(rel_path=path)
@@ -280,12 +280,13 @@ class PlumeSvn(object):
         if not os.path.exists(os.path.join(self.working_copy, rel_path)):
             raise OSError(f"{rel_path} doesn't exist")
 
-        if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
-            raise OSError(f"{rel_path} is not a file")
+        # if not os.path.isfile(os.path.join(self.working_copy, rel_path)):
+        #     raise OSError(f"{rel_path} is not a file") # TODO : Are we sure to avoid the isfile test ???? (commented to be able to commit/add folder)
 
         l = list(self.local_repo.status(rel_path))
         if len(l) != 1:
-            return False
+            # if on a folder, zero entry means not added or clean, so path not switched
+            return False 
         status = l[0]
 
         return status.switched
