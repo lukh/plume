@@ -65,7 +65,7 @@ class CreateProjectCommand(CommonCommand):
 class SwitchCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "release-library.svg"),
+            "Pixmap": os.path.join(ICONPATH, "switch.svg"),
             "MenuText": translate("Plume", "Switch a file"),
             "Accel": "P, P",
             "ToolTip": translate(
@@ -144,7 +144,7 @@ class SwitchCommand(CommonCommand):
 class UnswitchCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "check-project.svg"),
+            "Pixmap": os.path.join(ICONPATH, "unswitch.svg"),
             "MenuText": translate("Plume", "Unswitch a file"),
             "Accel": "P, U",
             "ToolTip": translate(

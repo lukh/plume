@@ -230,7 +230,7 @@ class InitializePlumeObjectCommand(CommonCommand):
 class EditExportedObjectsCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
+            "Pixmap": os.path.join(ICONPATH, "edit-exported.svg"),
             "MenuText": translate("Plume", "Edit Exported Objects"),
             "Accel": "P, I",
             "ToolTip": translate(
@@ -276,7 +276,7 @@ class EditExportedObjectsCommand(CommonCommand):
 class BuildExportedFilesCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
+            "Pixmap": os.path.join(ICONPATH, "build-exported.svg"),
             "MenuText": translate("Plume", "Build exported files"),
             "Accel": "P, I",
             "ToolTip": translate(
@@ -397,7 +397,7 @@ class BuildExportedFilesCommand(CommonCommand):
 class PublishPartCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
+            "Pixmap": os.path.join(ICONPATH, "publish-part.svg"),
             "MenuText": translate("Plume", "Publish selected Plume Part"),
             "Accel": "P, I",
             "ToolTip": translate(
