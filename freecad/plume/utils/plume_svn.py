@@ -467,6 +467,7 @@ class PlumeSvn(object):
         os.makedirs(os.path.join(self.working_copy, rel_proj_path))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "trunk"))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "releases"))
+        os.makedirs(os.path.join(self.working_copy, rel_proj_path, "exports"))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "tags"))
         os.makedirs(os.path.join(self.working_copy, rel_proj_path, "branches"))
 

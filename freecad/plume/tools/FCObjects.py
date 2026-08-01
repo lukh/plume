@@ -273,15 +273,15 @@ class EditExportedObjectsCommand(CommonCommand):
             setattr(root_obj, cat, [o.Name for o in sel])
 
 
-class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and rename Release to Tag... and allow a dry gen
+class BuildExportedFilesCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
-            "MenuText": translate("Plume", "Build release files"),
+            "MenuText": translate("Plume", "Build exported files"),
             "Accel": "P, I",
             "ToolTip": translate(
                 "Plume",
-                "<html><head/><body><p><b>Build release files for a given object</b> \
+                "<html><head/><body><p><b>Build exported files (STEP, PDF, etc) for a given object</b> \
                     <br><br> \
                     Select the Plume Object in the tree, and fire \
                     </p></body></html>",
@@ -339,7 +339,7 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
         sel = Gui.Selection.getSelection()
         root_obj = sel[0]
 
-        abs_root_path = os.path.split(root_obj.Document.FileName)[0]
+        abs_root_path = root_obj.Document.FileName
         dest = self.get_export_dir(abs_root_path)
         if dest is None:
             self.log('no dest for export !')
@@ -394,15 +394,18 @@ class BuildReleaseFilesCommand(CommonCommand): # Should be named Release, and re
 
 
 
-class ReleaseFilesCommand(CommonCommand):
+class PublishPartCommand(CommonCommand):
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "initialize-object.svg"),
-            "MenuText": translate("Plume", "release export files"),
+            "MenuText": translate("Plume", "Publish selected Plume Part"),
             "Accel": "P, I",
             "ToolTip": translate(
                 "Plume",
-                "<html><head/><body><p><b>release files for a given object</b> \
+                "<html><head/><body><p><b>Publish a plume part</b> \
+                    1. Check if all sub part exists in Inventree \
+                    2. Commit export folder if configured \
+                    3. Create inventree Part \
                     <br><br> \
                     Select the Plume Object in the tree, and fire \
                     </p></body></html>",
@@ -452,7 +455,7 @@ class ReleaseFilesCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
         root_obj = sel[0]
 
-        abs_root_path = os.path.split(root_obj.Document.FileName)[0]
+        abs_root_path = root_obj.Document.FileName
         dest = self.get_export_dir(abs_root_path)
         if dest is None:
             self.log('no dest for export !')
@@ -569,5 +572,5 @@ class ReleaseFilesCommand(CommonCommand):
 
 Gui.addCommand("Plume_InitializeObject", InitializePlumeObjectCommand())
 Gui.addCommand("Plume_EditExportedObjects", EditExportedObjectsCommand())
-Gui.addCommand("Plume_BuildReleaseFiles", BuildReleaseFilesCommand())
-Gui.addCommand("Plume_ReleaseFiles", ReleaseFilesCommand())
+Gui.addCommand("Plume_BuildExportedFilesCommand", BuildExportedFilesCommand())
+Gui.addCommand("Plume_PublishPartCommand", PublishPartCommand())

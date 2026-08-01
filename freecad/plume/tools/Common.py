@@ -135,18 +135,25 @@ class CommonCommand:
         return data
 
     def get_export_dir(self, abs_root_path):
+        """
+        get export dir from filename (in release)
+        """
         svn = self.svn()
         repo_config = self.config()
 
-        dest = None
-        if repo_config['export_in_svn']:
-            if repo_config['svn_export_mode'] == "subfolder":
-                dest = os.path.join(abs_root_path, repo_config["svn_export_subfolder"])
-            else:
-                dest = os.path.join(svn.working_copy, repo_config["svn_export_rootfolder"], os.path.relpath(abs_root_path, start=svn.working_copy))
+        rel_path = svn.get_rel_path(abs_root_path)
+        if not svn.is_release_path(rel_path):
+            raise PlumeSvnException(f'{abs_root_path} is not a release path')
 
-        if repo_config['export_in_inventree'] and dest is None:
-            dest = os.path.join(abs_root_path, "inventree-exports") # TODO : define an external folder (from WC) ? uncommited ?
+
+        (rootpath, subpath, release_name, version, revision, filename) = svn.split_release_path(rel_path)
+
+        dest = None
+        if repo_config['svn_export_mode'] == "subfolder":
+            dest = os.path.join(svn.working_copy, rootpath, repo_config["svn_export_subfolder"], subpath, release_name, f'{version}.{revision}')
+
+        else:
+            dest = os.path.join(svn.working_copy, repo_config["svn_export_rootfolder"], rootpath, subpath, release_name, f'{version}.{revision}')
 
         return dest
 
