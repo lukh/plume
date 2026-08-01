@@ -71,7 +71,9 @@ class SvnStatusItem:
         return len(self._child_items)
 
     def childNumber(self):
-        return list(self._parent_item._child_items.values()).index(self)
+        if self._parent_item:
+            return list(self._parent_item._child_items.values()).index(self)
+        return 0
 
     def columnCount(self):
         return len(self.COLUMNS)

@@ -67,7 +67,9 @@ class InventreeModelItem:
         return len(self._child_items)
 
     def childNumber(self):
-        return list(self._parent_item._child_items.values()).index(self)
+        if self._parent_item:
+            return list(self._parent_item._child_items.values()).index(self)
+        return 0
 
     def columnCount(self):
         return self.COLUMNS_COUNT
@@ -130,8 +132,8 @@ class InventreeModel(QAbstractItemModel):
         return self._repr_recursion(self._root_item)
 
 
-    def load(self, url, **kwargs):
-        self._inventree = PlumeInventree(url, **kwargs)
+    def load(self, plume_inventree):
+        self._inventree = plume_inventree
 
         self._root_item = InventreeModelItem(category=None, ipn=None, part=[None for k in InventreeModelItem.PART_COLS])
 
