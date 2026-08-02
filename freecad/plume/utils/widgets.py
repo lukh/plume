@@ -16,7 +16,7 @@ from freecad.plume.utils.selector import PlumeSelection
 from freecad.plume.utils.plume_svn import PlumeSvn
 from freecad.plume.utils.fc_utils import read_repo_config, write_repo_config
 
-# from freecad.plume.tools.Common import CommonCommand
+from freecad.plume.tools.Common import CommonCommand
 
 class ManageSubversionWorkingCopiesDialog(QDialog):
     def __init__(self, *args, **kwargs):
@@ -407,7 +407,7 @@ class DeselectableTreeView(QTreeView):
         self.clearSelection()
         QTreeView.mousePressEvent(self, event)
 
-class MainWidget(QWidget):
+class MainWidget(QWidget, CommonCommand):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -423,6 +423,7 @@ class MainWidget(QWidget):
         # INVENTREE
         self.inventree_model = InventreeModel()
         self.inventree_tree = QTreeView()
+        self.inventree_tree.setModel(self.inventree_model)
 
 
         # MENU
@@ -482,8 +483,7 @@ class MainWidget(QWidget):
         self.svn_model.load(path)
         PlumeSelection.instance().resetTreeSelection()
 
-        # TODO : not ok because of circular import
-        # self.inventree_model.load(self.inventree())
+        self.inventree_model.load(self.inventree())
 
 
     def onSVNTreeSelectionChanged(self, selected, deselected):
