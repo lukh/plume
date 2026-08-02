@@ -8,7 +8,6 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog
 
 from freecad.plume.svn.exception import SvnException
 from freecad.plume.utils.plume_inventree import PlumeInventree
@@ -121,7 +120,7 @@ class CommonCommand:
         password = creds[url]['password']
         token = creds[url]['token']
 
-        pi = PlumeInventree(repo_config['inventree_url'], token=token, username=user, password=password, strict=False)
+        pi = PlumeInventree(repo_config['inventree_url'], token=token, username=user, password=password)
         return pi
 
     def config(self):

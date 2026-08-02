@@ -13,8 +13,8 @@ class PlumeInventree(object):
 
     Shall we keep a valid list in the repository as well, of all the IPN used ?
     """
-    def __init__(self, adress, token=None, username=None, password=None, strict=True):
-        self.api = InvenTreeAPI(adress, token=token, username=username, password=password, strict=strict)
+    def __init__(self, adress, token=None, username=None, password=None):
+        self.api = InvenTreeAPI(adress, token=token, username=username, password=password)
 
 
     def get_categories(self, parent=None):
