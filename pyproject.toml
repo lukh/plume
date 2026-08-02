@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "git-versioner"]
+build-backend = "setuptools.build_meta:__legacy__"
+
+[project]
+name = "pip_system_certs"
+description = "Automatically configures Python to use system certificates via truststore"
+readme = "README.rst"
+license = "BSD-3-Clause"
+authors = [
+    {name = "Andrew Leech", email = "andrew@alelec.net"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Security :: Cryptography",
+]
+dependencies = [
+    "pip>=24.2"
+]
+requires-python = ">=3.10"
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://gitlab.com/alelec/pip-system-certs"
+Repository = "https://gitlab.com/alelec/pip-system-certs"
+Issues = "https://gitlab.com/alelec/pip-system-certs/-/issues"
+
+[tool.setuptools]
+zip-safe = false
+packages = ["pip_system_certs"]
+
+[tool.git-versioner]
+gitlab = true
+desc = true
+snapshot = true
+

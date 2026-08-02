@@ -1,0 +1,19 @@
+stages:
+  - test
+  - deploy
+
+test:
+  image: python:3
+  stage: test
+  script:
+    - bash test/test.sh
+
+deploy:
+  image: python:3
+  stage: deploy
+  script:
+  - pip install -U twine setuptools wheel build
+  - python -m build
+  - twine upload -u $PYPI_USER -p $PYPI_PASS dist/*
+  only:
+  - tags
