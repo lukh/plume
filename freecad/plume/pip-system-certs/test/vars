@@ -1,0 +1,8 @@
+set_var EASYRSA_ALGO "ec"
+set_var EASYRSA_DIGEST "sha512"
+
+set_var EASYRSA_REQ_COUNTRY     "AU"
+set_var EASYRSA_REQ_PROVINCE    "VIC"
+set_var EASYRSA_REQ_CITY        "Melbourne"
+set_var EASYRSA_REQ_ORG         "alelec"
+set_var EASYRSA_REQ_EMAIL       "mail@host.domain"
