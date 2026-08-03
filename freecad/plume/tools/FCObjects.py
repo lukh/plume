@@ -345,8 +345,18 @@ class BuildExportedFilesCommand(CommonCommand):
             self.log('no dest for export !')
             return
         
+
+        # prepare folder
+        dest_root_dir = os.path.split(dest)[0]
+        if not os.path.isdir(dest_root_dir):
+            os.makedirs(dest_root_dir, exist_ok=True)
+            svn.add(dest_root_dir)
+            svn.commit(f"Add export folder {dest_root_dir}", [dest_root_dir])
+
+        os.makedirs(dest, exist_ok=False) # force housekeeping, should be handled in a better way (TODO)
+
+
         # main shape
-        os.makedirs(dest, exist_ok=True)
         root_obj.Shape.exportStep(os.path.join(dest, root_obj.Label + ".step"))
 
         # exported objects (plans, etc)

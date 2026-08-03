@@ -256,14 +256,12 @@ class PlumeSvn(object):
         p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
         return os.path.normpath(p)
 
-    def get_releases_available(self, rel_trunk_path, release_name=None):
+    def get_releases_available(self, rel_trunk_path, release_name):
         """
         get releases availables for a trunk path (file)
         in the form of "version.revision"
         """
         rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
-        if release_name is None:
-            release_name = os.path.splitext(filename)[0]
 
         p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}"
         releases_path = self.get_abs_path(os.path.normpath(p))

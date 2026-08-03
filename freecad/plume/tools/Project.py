@@ -110,15 +110,14 @@ class SwitchCommand(CommonCommand):
 
             abs_root_path = root.Document.FileName
             rel_root_path = svn.get_rel_path(abs_root_path)
+            release_name = self.get_release_name(root)
 
             _, _, filename = svn.split_trunk_path(rel_root_path)
-            releases = svn.get_releases_available(rel_root_path)
+            releases = svn.get_releases_available(rel_root_path, release_name)
 
             release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_root_path}", releases)
             if ok:
                 version, revision = release.split(".")
-
-                release_name = os.path.splitext(filename)[0]
 
                 # TODO : Handles externals files in sub assembly (WIP)
                 # TODO : Handle if a file is remove/added between releases
@@ -389,7 +388,7 @@ class ReleaseCommand(CommonCommand):
         related_paths = [ap for ap in self.get_related_paths(root) if ap != abs_root_path]
 
         rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
-        release_name = os.path.splitext(filename)[0]
+        release_name = self.get_release_name(root)
 
 
         for p in related_paths:
