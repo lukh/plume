@@ -12,7 +12,6 @@ from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, Com
 from freecad.plume.tools.Common import CommonCommand, catch_svn
 
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
-from freecad.plume.utils.fc_utils import traverse
 
 class CreateProjectCommand(CommonCommand):
     def GetResources(self):
@@ -36,18 +35,21 @@ class CreateProjectCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        abs_root_path = open_or_create_directory(svn.working_copy, "Select destination folder of the project")
         project_name, ok = QInputDialog.getText(None, "Project Folder Name", "Project Name/Folder")
         if not ok:
+            return
+
+        abs_root_path = QFileDialog.getExistingDirectory(None, "Select destination folder of the project", svn.working_copy)
+        if not abs_root_path:
             return
 
         abs_path = os.path.join(abs_root_path, project_name)
 
         if not svn.is_in_repository(abs_root_path):
-            QMessageBox.error(None, "Path Error", "Project not in repository")
+            QMessageBox.warning(None, "Path Error", "Project not in repository")
 
         if os.path.exists(abs_path):
-            QMessageBox.error(None, "Project already exists !", abs_path)
+            QMessageBox.warning(None, "Project already exists !", abs_path)
             return
 
         rel_path = svn.get_rel_path(abs_path)
@@ -63,7 +65,7 @@ class CreateProjectCommand(CommonCommand):
 class SwitchCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "release-library.svg"),
+            "Pixmap": os.path.join(ICONPATH, "switch.svg"),
             "MenuText": translate("Plume", "Switch a file"),
             "Accel": "P, P",
             "ToolTip": translate(
@@ -102,30 +104,46 @@ class SwitchCommand(CommonCommand):
         svn = self.svn()
 
         sel = Gui.Selection.getSelection()
+
         if len(sel) == 1:
-            obj = sel[0]
-            abs_path = obj.Document.FileName
-            rel_path = svn.get_rel_path(abs_path)
+            root = sel[0]
 
-            _, _, filename = svn.split_trunk_path(rel_path)
-            releases = svn.get_releases_available(rel_path)
+            abs_root_path = root.Document.FileName
+            rel_root_path = svn.get_rel_path(abs_root_path)
+            release_name = self.get_release_name(root)
 
-            release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_path}", releases)
+            _, _, filename = svn.split_trunk_path(rel_root_path)
+            releases = svn.get_releases_available(rel_root_path, release_name)
+
+            release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_root_path}", releases)
             if ok:
                 version, revision = release.split(".")
 
-                release_name = os.path.splitext(filename)[0]
+                # TODO : Handles externals files in sub assembly (WIP)
+                # TODO : Handle if a file is remove/added between releases
+                for p in self.get_related_paths(root):
+                    rp = svn.get_rel_path(p)
 
-                svn.switch(rel_path, release_name, version, revision)
+                    if not svn.is_path_external(rp):
+                        if not svn.is_path_switched(rp):
+                            try:
+                                svn.switch(rp, release_name, version, revision) 
+                                self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
+                            except OSError as e:
+                                self.log(f"Can't switch {rp} : {str(e)}")
+                        else:
+                            self.log(f"Leave {rp} untouched, is switched")
+                    else:
+                        self.log(f"Leave {rp} untouched, is external")
 
                 App.closeDocument(os.path.splitext(filename)[0])
-                App.openDocument(abs_path)
+                App.openDocument(abs_root_path)
 
 
 class UnswitchCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "check-project.svg"),
+            "Pixmap": os.path.join(ICONPATH, "unswitch.svg"),
             "MenuText": translate("Plume", "Unswitch a file"),
             "Accel": "P, U",
             "ToolTip": translate(
@@ -164,23 +182,39 @@ class UnswitchCommand(CommonCommand):
         svn = self.svn()
 
         sel = Gui.Selection.getSelection()
+
         if len(sel) == 1:
-            obj = sel[0]
+            root = sel[0]
 
-            abs_path = obj.Document.FileName
-            rel_path = svn.get_rel_path(abs_path)
+            root_path = root.Document.FileName
 
-            svn.unswitch(rel_path)
+            # TODO : Handles externals files in sub assembly (WIP)
+            # TODO : Handle if a file is remove between releases
 
-            App.closeDocument(os.path.splitext(os.path.split(abs_path)[1])[0])
-            App.openDocument(abs_path)
+            for p in self.get_related_paths(root):
+                rp = svn.get_rel_path(p)
+                if not svn.is_path_external(rp):
+                    if svn.is_path_switched(rp):
+                        try:
+                            svn.unswitch(rp)
+                            self.log(f"Unswitch {rp}")
+                        except OSError as e:
+                            self.log(f"Can't switch {rp} : {str(e)}")
+                    else:
+                        self.log(f"Leave {rp} untouched, is not switched")
+                else:
+                    self.log(f"Leave {rp} untouched, is external")
+
+
+            App.closeDocument(os.path.splitext(os.path.split(root_path)[1])[0])
+            App.openDocument(root_path)
 
 
 
 class ImportExternalCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "check-library.svg"),
+            "Pixmap": os.path.join(ICONPATH, "extern-add.svg"),
             "MenuText": translate("Plume", "Import external file to project"),
             "Accel": "P, P",
             "ToolTip": translate(
@@ -194,10 +228,9 @@ class ImportExternalCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            root = sel[0]
-            root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            root_path = sel_paths[0]
             if svn.is_in_repository(root_path) and svn.is_trunk_path(root_path):
                 return True
 
@@ -208,9 +241,8 @@ class ImportExternalCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        obj = sel[0]
-        doc_path = obj.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        doc_path = sel_paths[0]
 
         rel_root_path, _, _ = svn.split_trunk_path(svn.get_rel_path(doc_path))
         abs_root_path = svn.get_abs_path(rel_root_path)
@@ -245,7 +277,7 @@ class ImportExternalCommand(CommonCommand):
 class RemoveExternalCommand(CommonCommand):
     def GetResources(self):
         return {
-            "Pixmap": os.path.join(ICONPATH, "check-library.svg"),
+            "Pixmap": os.path.join(ICONPATH, "extern-remove.svg"),
             "MenuText": translate("Plume", "Remove external file from project"),
             "Accel": "P, R",
             "ToolTip": translate(
@@ -259,10 +291,9 @@ class RemoveExternalCommand(CommonCommand):
     def IsActive(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        if len(sel) == 1:
-            root = sel[0]
-            root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        if len(sel_paths) == 1:
+            root_path = sel_paths[0]
             if (\
                 svn.is_in_repository(root_path) and \
                 svn.is_trunk_path(root_path) and \
@@ -279,9 +310,8 @@ class RemoveExternalCommand(CommonCommand):
     def Activated(self):
         svn = self.svn()
 
-        sel = Gui.Selection.getSelection()
-        root = sel[0]
-        root_path = root.Document.FileName
+        sel_paths = self.get_files_from_objects()
+        root_path = sel_paths[0]
 
         rel_root_path, _, _ = svn.split_trunk_path(svn.get_rel_path(root_path))
         externals = svn.get_externals(rel_root_path)
@@ -310,12 +340,15 @@ class ReleaseCommand(CommonCommand):
 
     @catch_svn
     def IsActive(self):
-        sel = Gui.Selection.getSelection()
+        sel = Gui.Selection.getSelection() # here, the object is needed for future use
         if len(sel) != 1:
             return False
 
         obj = sel[0]
-        if not hasattr(obj, "PlumeID"):
+        if not hasattr(obj, "PlumeIPN"):
+            return False
+
+        if obj.PlVersion == "" or obj.PlRevision == "":
             return False
 
         root_path = obj.Document.FileName
@@ -346,41 +379,19 @@ class ReleaseCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
 
         root = sel[0]
-        if not hasattr(root, "PlumeID"):
-            QMessageBox.information(None, "Bad Object", "Selected object is not initialized with plume properties")
-            return
         abs_root_path = root.Document.FileName
         rel_root_path = svn.get_rel_path(abs_root_path)
 
         version = root.PlVersion
         revision = root.PlRevision
 
-        if version == "" or revision == "":
-            raise PlumeSvnException(f'{root.Label} : set version/revision')
-
-        all_objects = list(traverse(root))
-        related_objects = [o for o in all_objects if o != root]
-
-
-        if not svn.is_in_repository(abs_root_path):
-            raise PlumeSvnException(f'{abs_root_path} : not in repo')
-
-        if not svn.is_trunk_path(rel_root_path):
-            raise PlumeSvnException(f'{rel_root_path} : not in trunk')
-
-        if svn.is_path_switched(rel_root_path):
-            raise PlumeSvnException(f'{rel_root_path} : switched')
-
-        if not svn.is_path_clean(rel_root_path):
-            raise PlumeSvnException(f'{rel_root_path} : not clean')
-
+        related_paths = [ap for ap in self.get_related_paths(root) if ap != abs_root_path]
 
         rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
-        release_name = os.path.splitext(filename)[0]
+        release_name = self.get_release_name(root)
 
 
-        related_paths = []
-        for p in [o.Document.FileName for o in related_objects]:
+        for p in related_paths:
             rel_p = svn.get_rel_path(p)
             if not svn.is_in_repository(p):
                 errors_msgs.append(f"{p} not in repo")
@@ -410,25 +421,21 @@ class ReleaseCommand(CommonCommand):
             else:
                 pass
 
-            rp_rootpath, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
-            if rp_rootpath != rootpath:
-                errors_msgs.append(f"{rp_rootpath} not in root object path")
-                release_ok = False
-                continue
 
-            if (rp_rootpath, rp_subpath, rp_filename) not in related_paths:
-                related_paths.append((rp_rootpath, rp_subpath, rp_filename))
+        filepaths = [filename]
+        for p in related_paths:
+            rel_p = svn.get_rel_path(p)
+            _, rp_subpath, rp_filename = svn.split_trunk_path(rel_p)
 
-
-        sub_paths = [(subpath, filename)]
-        for rp in related_paths:
-            sub_paths.append((subpath, os.path.join(rp[1], rp[2])))
+            if rp_subpath:
+                rp_filename = os.path.join(os.path.relpath(rp_subpath, start=subpath), rp_filename)
+            filepaths.append(rp_filename)
 
         if release_ok:
-            if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, sp[0], sp[1]) for sp in sub_paths])}') == QMessageBox.StandardButton.Yes:
-                svn.release(rootpath, release_name, version, revision, sub_paths=sub_paths)
+            if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}') == QMessageBox.StandardButton.Yes:
+                svn.release(rootpath, subpath, release_name, version, revision, filepaths=filepaths)
 
-                QMessageBox.information(None, "Release ok", f'releasing ...\n{"\n".join([svn.get_trunk_path(rootpath, sp[0], sp[1]) for sp in sub_paths])}')
+                QMessageBox.information(None, "Release ok", f'released : \n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}')
 
         else:
             QMessageBox.warning(None, "Can't release", "\n".join(errors_msgs))

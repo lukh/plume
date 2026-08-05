@@ -6,13 +6,13 @@ import FreeCAD as App
 import FreeCADGui as Gui
 
 from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
-from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, CommitDialog
+from freecad.plume.utils.widgets import ManageSubversionWorkingCopiesDialog, RepositoryPreferencesDialog, CommitDialog
 
 from freecad.plume.tools.Common import CommonCommand, catch_svn
 
 from freecad.plume.utils.plume_svn import PlumeSvn, PlumeSvnException
 
-class SubversionManageWorkingCopies:
+class SubversionManageWorkingCopiesCommand:
     def GetResources(self):
         return {
             "Pixmap": os.path.join(ICONPATH, "browse.svg"),
@@ -31,6 +31,28 @@ class SubversionManageWorkingCopies:
     @catch_svn
     def Activated(self):
         diag = ManageSubversionWorkingCopiesDialog()
+        diag.exec()
+
+
+class RepositoryPreferencesCommand(CommonCommand):
+    def GetResources(self):
+        return {
+            "Pixmap": os.path.join(ICONPATH, "browse.svg"),
+            "MenuText": translate("Plume", "Repository preferences"),
+            "Accel": "P, M",
+            "ToolTip": translate(
+                "Plume",
+                "<html><head/><body><p><b>Edit repository global preferences</b> \
+                    </p></body></html>",
+            ),
+        }
+
+    def IsActive(self):
+        return True
+
+    @catch_svn
+    def Activated(self):
+        diag = RepositoryPreferencesDialog(self.svn().working_copy)
         diag.exec()
 
 
@@ -99,7 +121,7 @@ class SubversionCommitFileCommand(CommonCommand):
         svn = self.svn()
         paths = [(svn.path_status(path).type_raw_name, path) for path in self.get_files_from_objects()]
         if len(paths) == 0:
-            paths = [(s.type_raw_name, s.name) for s in svn.status() if not s.switched]
+            paths = [(s.type_raw_name, s.path) for s in svn.status() if not s.switched]
 
         ok, paths_to_commit, message = CommitDialog.get_commit_infos(paths=paths)
 
@@ -139,6 +161,9 @@ class SubversionLockCommand(CommonCommand):
 
         for p in paths:
             if not svn.is_in_repository(p):
+                return False
+
+            if not svn.is_trunk_path(p):
                 return False
 
             if not svn.is_path_clean(p):
@@ -189,6 +214,9 @@ class SubversionUnlockCommand(CommonCommand):
             if not svn.is_in_repository(p):
                 return False
 
+            if not svn.is_trunk_path(p):
+                return False
+
             if not svn.is_path_clean(p):
                 return False
 
@@ -210,7 +238,8 @@ class SubversionUnlockCommand(CommonCommand):
 
 
 
-Gui.addCommand("Plume_ManageWorkingCopies", SubversionManageWorkingCopies())
+Gui.addCommand("Plume_ManageWorkingCopies", SubversionManageWorkingCopiesCommand())
+Gui.addCommand("Plume_RepositoryPreferences", RepositoryPreferencesCommand())
 Gui.addCommand("Plume_Update", SubversionUpdateCommand())
 Gui.addCommand("Plume_Commit", SubversionCommitFileCommand())
 Gui.addCommand("Plume_Lock", SubversionLockCommand())

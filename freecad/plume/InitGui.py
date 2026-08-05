@@ -1,5 +1,8 @@
 import os
 
+from PySide6.QtCore import Qt
+
+
 import FreeCAD as App
 import FreeCADGui as Gui
 
@@ -135,6 +138,7 @@ class Plume(Gui.Workbench):
     toolbox_repository = [
         # "Plume_Connect",
         "Plume_ManageWorkingCopies",
+        "Plume_RepositoryPreferences",
         "Plume_Update",
         "Plume_Commit",
         "Plume_Lock",
@@ -152,9 +156,16 @@ class Plume(Gui.Workbench):
 
     toolbox_object = [
         "Plume_InitializeObject",
+        "Plume_EditExportedObjects",
+        "Plume_BuildExportedFilesCommand",
+        "Plume_PublishPartCommand"
         # "Plume_UpdateLinkToVersion",
         # "Plume_LinkObjectToItem"
     ]
+
+    def __init__(self):
+        super().__init__()
+        self._subwin = None  # Store reference to MDI subwindow
 
 
     def GetClassName(self):
@@ -167,6 +178,7 @@ class Plume(Gui.Workbench):
         """
         from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
         from freecad.plume.tools import Repository, FCObjects, Project
+        from freecad.plume.utils.selector import SelectionObserver
 
         Gui.addIconPath(ICONPATH)
         Gui.addPreferencePage(os.path.join(UIPATH, "preferences.ui"),"Plume")
@@ -183,14 +195,19 @@ class Plume(Gui.Workbench):
         self.appendMenu(translate("plume", "Project"), self.toolbox_project)
         self.appendMenu(translate("plume", "Object"), self.toolbox_object)
 
+        s=SelectionObserver()
+        Gui.Selection.addObserver(s)
+
+
     def Activated(self):
         """
         code which should be computed when a user switch to this workbench
         """
-        pass
-        # from freecad.frameforge.ff_tools import translate
+        from PySide6.QtGui import QIcon
+        from PySide6.QtWidgets import QMdiArea
+        from freecad.plume.utils.widgets import MainWidget
 
-        # App.Console.PrintMessage(translate("frameforge", "Workbench frameforge activated.") + "\n")
+        self.create_or_show_window(MainWidget)
 
     def Deactivated(self):
         """
@@ -210,5 +227,41 @@ class Plume(Gui.Workbench):
             "Plume_Lock",
             "Plume_Unlock",
         ])
+
+
+    
+    def create_or_show_window(self, widget_cls):
+        """Create the diff panel if it doesn't exist, or show/focus it if it does."""
+        # Create subwindow if it doesn't exist (was closed or never created)
+        if self._subwin is None:
+            self._create_window(widget_cls)
+        else:
+            # Show existing subwindow and bring to front
+            self._subwin.show()
+            # self._subwin.raise_()
+            # self._subwin.setFocus()
+        
+    def _create_window(self, widget_cls):
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QMdiArea
+        from PySide.QtGui import QIcon
+        from freecad.plume.pl_tools import UIPATH, ICONPATH, TRANSLATIONSPATH, translate
+
+        main = Gui.getMainWindow()
+        mdi = main.findChild(QMdiArea)
+    
+        w = widget_cls()
+    
+        self._subwin = mdi.addSubWindow(w)
+        self._subwin.setWindowTitle("Plume")
+        self._subwin.setWindowIcon(QIcon(os.path.join(ICONPATH, "plume.png")))
+        self._subwin.resize(900, 600)
+        self._subwin.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, True)
+        self._subwin.show()
+        
+        self._subwin.destroyed.connect(self._on_subwindow_closed)
+        
+    def _on_subwindow_closed(self):
+        self._subwin = None  # Reset reference so new one will be created on next activation
 
 Gui.addWorkbench(Plume())

@@ -1,9 +1,32 @@
 # Plume PDM
 
+DISCLAIMER : At the moment, this project is not, in any way, ready for production.
+It is a valid PoC though, and I loved to get feedback :)
+
+I am working actively on it, but it is still a secondary project for now. (but needed for my work as [Bike Trailer Manufacturer](https://www.microforge.fr))
+
 ## Goals
 
 The idea behind Plume is to get a tool and ecosystem to manage FreeCAD projects in a more collaborative way.
-I think it is a PDM but I am not sure.
+
+Key points :
+
+- Allows teams to work together on projects and files
+- Integrated into FreeCAD
+- Use already existing tools, to ease development and leverage on great workflow
+- Provide a workflow from development to production, managing parts/ipn and stock, build order, etc.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L41KKMJR)
+
+
+Plume is based on Subversion and Inventree.
+
+Subversion is a Control Version System, a "old" one, but it allows to work in Lock/Modify/Commit, which is needed to work on binary file (such as FreeCAD). It allow developpers to handle dev files.
+
+Inventree is a Inventory Management System, Allowing to create Parts, handle storage and stock, and pass Build Order. 
+It is used to release a "Project", part, tracking their version in sync with SVN.
+
+Plume is the FreeCAD Workbench that glue these tools together.
 
 ## State of the Art:
 
@@ -17,7 +40,15 @@ Several open source projects exists already;
   
 I need to dive into into it.
 
-## Preliminars Ideas:
+
+## Current Work:
+
+Check [Specifications](docs/SPECIFICATIONS.md) for getting a view of the concepts.
+
+There is a [video](https://www.youtube.com/watch?v=fIUK7SWVy9U) as well, in French with subtitle, 
+
+
+## (Chain of tought) Preliminars Ideas:
 
 What I get in mind.
 
@@ -50,197 +81,3 @@ What I get in mind.
 
 5. Handle "locking" of Files
 
-
-## First drafts of commands
-
-Develop a workbench "Plume" that provide these tools:
-
-- Tool : Configure/Create "PlumePart":
-Add various property to the object (Part/PartDesign/etc/Assemblies)
-  - UUID, immutable -> linked to the Inventree server -> Chained link to the past revisions ?
-  - Version/Revision, updatable automatically or manually ?
-  - Commit Hash (?)
-  - Lock/Modified
-    - Lock should be handle via SVN I guess, modified is flagged when modifying a Property via an observer.
-- Tool : Lock/Unlock a Part - File
-- Tool : Commit
-  - Commit the file where the object is located
-- Tool : Create/Tag a version -> Push on the Inventree server and "build" related files (STEP, DXF, PDF, ASM, BOM....)
-    -> Recursivly ?
-
-
-## SVN Repo layout and file organisation
-
-In an organization (company, etc), in a FreeCAD way of organising stuff...
-Every "Part" (Laser Cut, 3D, manufactured Part, internally or externally) should have its own FreeCAD file.
-- A Frame (build with Frameforge) is in a single file, for instance.
-- A 3D printed object too.
-- An Assembly file (or more than one) handles the work of mixing all these parts together
-- Screws, nut (from fasteners workbench for instance) are a specific case, they should be added in the Assembly file
-
-It is specially true for SharedPart, that must be unique.
-It allows better granularity and an easier file management.
-Since everything is tagged, it will not break projects if a Shared File is modified in the "common" trunk for instance
-
-Using a standard svn layout, with my very limited knowledge (yet) of SVN, the repositories should look like.
-
-```
-.
-└── /
-    ├── plume.yml
-    ├── libraries
-    │   ├── trunk
-    │   │   ├── SharedPart1.FCStd
-    │   │   ├── SharedPart2.FCStd
-    │   │   ├── SharedPart3.FCStd
-    │   │   └── GroupOfSharedObjects
-    │   │       ├── SharedPart4.FCStd
-    │   │       └── SharedPart5.FCStd
-    │   ├── branches
-    │   └── tags
-    │       ├── SharedPart1
-    │       │   ├── 1.0
-    │       │   │   └── SharedPart1.FCStd
-    │       │   └── 1.1
-    │       │       └── SharedPart1.FCStd
-    │       ├── SharedPart2
-    │       │   ├── 1.0
-    │       │   │   └── SharedPart2.FCStd
-    │       │   └── 1.1
-    │       │       └── SharedPart2.FCStd
-    │       ├── SharedPart3
-    │       │   ├── 1.0
-    │       │   │   └── SharedPart3.FCStd
-    │       │   └── 1.1
-    │       │       └── SharedPart3.FCStd
-    │       └── GroupOfSharedObjects
-    │           ├── SharedPart4
-    │           │   └── 1.0
-    │           │       └── SharedPart4.FCStd
-    │           └── SharedPart5
-    │               └── 1.0
-    │                   └── SharedPart5.FCStd
-    └── projects
-        ├── project-A
-        │   ├── trunk
-        │   │   ├── Assembly.FCStd
-        │   │   ├── LocalPart1.FCStd
-        │   │   ├── LocalPart2.FCStd
-        │   │   ├── LocalPart3.FCStd
-        │   │   ├── LocalPart4.FCStd
-        │   │   └── LocalPart5.FCStd
-        │   ├── tags
-        │   │   ├── 1.0
-        │   │   │   ├── Assembly.FCStd
-        │   │   │   ├── LocalPart1.FCStd
-        │   │   │   ├── LocalPart2.FCStd
-        │   │   │   ├── LocalPart3.FCStd
-        │   │   │   └── LocalPart4.FCStd
-        │   │   └── 2.0
-        │   │       ├── Assembly.FCStd
-        │   │       ├── LocalPart1.FCStd
-        │   │       ├── LocalPart2.FCStd
-        │   │       ├── LocalPart3.FCStd
-        │   │       ├── LocalPart4.FCStd
-        │   │       └── LocalPart5.FCStd
-        │   └── branches
-        └── project-B
-            ├── trunk
-            │   ├── Assembly.FCStd
-            │   ├── LocalPart1.FCStd
-            │   ├── LocalPart2.FCStd
-            │   ├── LocalPart3.FCStd
-            │   └── LocalPart4.FCStd
-            ├── tags
-            │   └── 1.0
-            │       ├── Assembly.FCStd
-            │       ├── LocalPart1.FCStd
-            │       ├── LocalPart2.FCStd
-            │       ├── LocalPart3.FCStd
-            │       └── LocalPart4.FCStd
-            └── branches
-```
-
-Projects follows the svn convention. But common parts doesn't really, since they could be used by other projects.
-They must keep tracks of all of their versions, accessible to all the others projects.
-
-
-
-The repository would probably belongs to an organisation, with their own specifications.
-
-To handle that, and specifics "attributes", a plume.yml file exists at the root of the repo:
-
-```YAML
-
-- stage_before_release: true
-- include_short_fcinfo_in_commit: true
-
-- library_folder: libraries
-- projects_folder: projects
-
-- UUID: inventree|local
-- version: number|letter
-- revision: number|letter
-
-- extra_items_attributes:
-    - name: type
-    - name: type
-    - name: type
-    - name: type
-
-```
-
-## Plume Property for any objects:
-
-Plume will add specific data (Properties) to objects.
-
-List of Property: (in the Plume Group)
-
-Item Related
-- UUID : uuid / or InventreeID
-- Version : Number or string (ro, read from DB/filepath-tag ? or set up at release)
-- Revision : Number or string (ro, ro, read from DB/filepath-tag ? or set up at release)
-- Type : List [MechanicalPart, MechanicalAssembly, OtherItem] (ro, guessed from type ? or not, a MA can be bought and would need to be atomic in the DB)
-  - MechanicalPart
-  - an MechanicalAssembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
-  - OtherItem: software, stickers, cable, etc..
-
-- Manufactured: Bool, if False, the object is bought
-  - a BoughtPart is bought from a distributor (a screw, a nut, a bearing, etc..) 
-    - Fasteners can be managed as SharedPart... ?(and in the SharedFasteners.FCStd, they are handle as Part, that way they are managed by inventree, but it is not mandatory)
-  - a ManufacturedPart needs steps to build : 3D Prints, CNC, Metal Work, WoodWork, etc..)
-    - It could need "Material", ie plastic, Profiles, etc...
-    - It has documents to describe the Item
-
-DocumentsGenerators
-- ExportedTechDrawPages: the list of related techdraw pages to export
-- ExportedCNCJobs: the list of related techdraw pages to export (for ManufacturedPart)
-- ExportedDXFs: the list of (techdrawpage) exported as DXF for manufacturing (for ManufacturedPart)
-- (ExportSTEP): Bool, but I think it is not needed, Parts/ManufacturedParts and Assemblies needs a full STEP export right ? and a Fastener doesn't.
-- ExternDoc (for external datasheet, etc : )
-
-
-## Plume Tools
-
-1. Repository Management
-   1. Connect to a repository
-   2. Update/Checkout
-   3. 
-   
-2. Project Management
-   1. Lock/Unlock Project (All files related to the project (current file))
-   2. Lock/Unlock a File (inside a Project or Shared)
-   3. Commit a file (on related trunk /branch / forbid commit on tags)
-   4. Release/Tag a Shared File
-        - Create a tag
-        - Create a new version in Inventree
-          - And create a Inventree Part if needed
-          - if a file/subfile is in a trunk, it can't be created as a version in inventree (for the top project as well, the release is cancelled )
-   5. Release/Tag a Project (a project is a file and all the dependancies)
-        - Create a tag
-        - Create a new version in Inventree for all related files/objects (if needed, regarding their version !)
-          - And create a Inventree Part if needed
-          - if a file/subfile is in a trunk, it can't be created as a version in inventree (for the top project as well, the release is cancelled )
-
-3. Links Management
-   1. Update SharedObject link to a specific version.

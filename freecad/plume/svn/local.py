@@ -9,13 +9,29 @@ import svn.common
 _STATUS_ENTRY = \
     collections.namedtuple(
         '_STATUS_ENTRY', [
-            'name',
+            'filename',
+            'path',
             'type_raw_name',
             'type',
             'revision',
+            'last_committed_revision',
+            'last_committed_author',
             'switched',
             'locked',
-            'external'
+            'external',
+            'is_folder'
+        ], defaults=[
+            "",
+            "",
+            "normal",
+            svn.constants.ST_NORMAL,
+            None,
+            None,
+            None,
+            False,
+            False,
+            False,
+            False
         ])
 
 _INFO_ENTRY = \
@@ -38,6 +54,18 @@ class LocalClient(svn.common.CommonClient):
 
     def __repr__(self):
         return '<SVN(LOCAL) %s>' % self.path
+
+
+    def mkdir(self, rel_path, parents=False):
+        args = [rel_path]
+
+        if parents is True:
+            args.append('--parents')
+
+        self.run_command(
+            'mkdir',
+            args,
+            wd=self.path)
 
     def add(self, rel_path, do_include_parents=False):
         args = [rel_path]
@@ -84,14 +112,23 @@ class LocalClient(svn.common.CommonClient):
             [],
             wd=self.path)
 
-    def status(self, rel_path=None):
+    def status(self, rel_path=None, verbose=False, depth=None):
         path = self.path
         if rel_path is not None:
             path += '/' + rel_path
 
+        args = ['--xml']
+        if verbose:
+            args.append('-v')
+
+        if depth in ['empty', 'files', 'immediates', 'infinity']:
+            args += ['--depth', depth]
+
+        args.append(path)
+
         raw = self.run_command(
             'status',
-            ['--xml', path],
+            args,
             do_combine=True)
 
         root = xml.etree.ElementTree.fromstring(raw)
@@ -113,7 +150,15 @@ class LocalClient(svn.common.CommonClient):
             if revision is not None:
                 revision = int(revision)
 
-            SWICTHED_LUT = {"true":True, "false":False, None:None}
+            commit = wcstatus.find('commit')
+            if commit is not None:
+                last_committed_author = commit.findtext('author')
+                last_committed_revision = commit.attrib.get('revision')
+            else:
+                last_committed_author = None
+                last_committed_revision = None
+
+            SWICTHED_LUT = {"true":True, "false":False, None:False}
             switched = SWICTHED_LUT[wcstatus_attr.get('switched')]
             
             EXTERNAL_LUT = {"true":True, "false":False, None:False}
@@ -122,13 +167,17 @@ class LocalClient(svn.common.CommonClient):
             lock_status = wcstatus.find('lock') is not None
 
             yield _STATUS_ENTRY(
-                name=name,
+                filename=os.path.split(name)[1],
+                path=name,
                 type_raw_name=change_type_raw,
                 type=change_type,
                 revision=revision,
+                last_committed_revision=last_committed_revision,
+                last_committed_author=last_committed_author,
                 switched=switched,
                 locked=lock_status,
-                external=external
+                external=external,
+                is_folder=os.path.isdir(name)
             )
 
 

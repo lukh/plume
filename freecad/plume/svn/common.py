@@ -160,14 +160,20 @@ class CommonClient(svn.common_base.CommonBase):
             ['--xml', full_url_or_path],
             do_combine=True)
 
+        property_dict = {}
+
         # query the proper list of this path
         root = xml.etree.ElementTree.fromstring(result)
         target_elem = root.find('target')
+
+        if target_elem is None:
+            return property_dict
+
+
         property_names = [p.attrib["name"]
                           for p in target_elem.findall('property')]
 
         # now query the content of each propery
-        property_dict = {}
 
         for property_name in property_names:
             result = self.run_command(
