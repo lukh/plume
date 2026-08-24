@@ -43,7 +43,9 @@ I need to dive into into it.
 
 ## Current Work:
 
-Check [Specifications](docs/SPECIFICATIONS.md) for getting a view of the concepts.
+Check [Specifications](docs/SPECIFICATIONS.md) for getting a view of the concepts. (At the moment, the specs are out-of-date since it moved while working on the PoC)
+
+Check [TODO](TODO.md) for getting a view of the work done, and what need to be done for a stable / fancy enough version
 
 There is a [video](https://www.youtube.com/watch?v=fIUK7SWVy9U) as well, in French with subtitle, 
 
