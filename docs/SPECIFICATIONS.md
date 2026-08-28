@@ -14,14 +14,16 @@
 
    Items represent real-work objects: parts, assemblies, puchased components, etc. 
    They are stored and saved in the Inventree system.
-   They have a unique id, version+revision number, and attributes.
-   Items have links to specific Tags in the Subversion repository,
-   and are linked to specifics Documents 
+
+   They have a unique id, "PlumeIPN", version+revision number, and attributes.
+
+   Items have links to specific Tags in the Subversion repository, 
 
 - Documents
 
   Documents describe the Items for manufacturing. (BoM, Schematics, STEP file, etc)
   They are linked to a specific versionned Item.
+  It can be PDF, CSV, STEP, DXF, etc.
 
 - Versionning
 
@@ -29,60 +31,74 @@
 
   - Version
 
-    It is a major revision. (functionnal status, when a part change completly, )
-    Numbering as 1, 2, 3, etc
+#It is a major revision. (functionnal status, when a part change completly, )
+#Numbering as 1, 2, 3, etc
 
   - Revision
   
-    A Minor revision on the part.
-    Numbering A, B, C, D, etc.
-
-  - Patch
-
-    A Patch concerns only new minor correction of Documents like Schematic, (typo, better view, etc)
-
-    It is used when no structural modifications is done on the Items.
-
+#A Minor revision on the part.
+#Numbering A, B, C, D, etc.
 
 - Repository
   
+  A SVN root Working Copy. 
+
   Holds files under trunk for development, and releases/tags/branchs for releases/tags/wip
 
 - Tags
 
   Tags are Subversion Tags.
-  They are created at every version/revision/patch change.
+
+  It is used to stamp a development step, that should not be released
+
+  They can be used for internal needs, not rattached to anything special in Plume.
+
 
 - Branch
   
   Subversion Branches are available, up to the engineers to create/merge.
 
-- File / Folder
-  - Assembly
-  - Part
- 
-  Standard FreeCAD file. They can hold more than one item, and can also hold several Document rattached to the Item
+  For instance, one needs to validate a specific feature, fix a complicated bug, etc
 
-- CheckIn/CheckOut
+- FreeCAD File
+
+The FreeCAD files are saved and tracked by the SVN Repository.
+ 
+  Standard FreeCAD file. They can hold more than one Item, and can also hold several Document rattached to the Items
+
+- Lock/Unlock
 
   Since FreeCAD files are Binary files, it is mandatory to lock others when working on a file.
 
   Each time a user wants to modify an item or a document, it is necessary to perform a check-out action, so that it is locked for everybody else. 
   After the changes have been made, the user performs a check-in action and the object is then free for the team to change it the same way
 
-  A CheckOut will:
-    - Update the repository
-    - Lock the file
-  A CheckIn will:
-    - Commit the file
-    - Unlock it.
+  A CheckOut needs two actions:
 
-- Lock/Unlock
+#- Update the repository
+#- Lock the file
+
+  A CheckIn needs twp actions:
+
+#- Commit the file
+#- Unlock it.
+
+
 - Commit
+
+Save Files/Folder on the main repository, in the specified place.
+
+A Commit hold a commit message; allowing to ease development step, and hold a commit number. A Commit is on the top of a previous, in a linked way.
+
 - Release (action) : release an Item, from a File.
 
+The release action is launched from an Item in the file.
+If possible (PlumeIPN available, files are clean, version are set-up) it will create a "tag" (copy trunk into a releases subfolder) with all related files
 
 
+- Export : Taxke a release and perform :
+  - Export of Documents related to Item
+  - Publish to Inventree server for integration in ERP
 
 ## Data Organization
 
@@ -114,8 +130,7 @@ The repository is organised as follow :
 
 ```
 .
-.
-.
+├── .
 └── /
     ├── plume.yml
     ├── parts
@@ -150,6 +165,11 @@ The repository is organised as follow :
     │   │       └── SharedPart5
     │   │           └── 1.0
     │   │               └── SharedPart5.FCStd
+    │   ├── exports
+    │   │   └── SharedPart1
+    │   │       └── 1.0
+    │   │           ├── SharedPart1.step
+    │   │           └── SharedPart1.pdf
     │   └── tags
     └── projects
         └── project-A
@@ -233,6 +253,12 @@ The repository is organised as follow :
             │       │   └── LocalPart5.FCStd
             │       └── 2.A
             │           └── LocalPart5.FCStd
+            ├── exports
+            │   └── Assembly
+            │       └── 1.A
+            │           ├── Assembly.step
+            │           ├── Schematic.pdf
+            │           └── BOM.csv
             ├── tags
             │   ├── v1.0
             │   └── v2.0
@@ -244,11 +270,11 @@ Files exists under "repositories" : A sub folder of WC/root with
   - a trunk folder for dev work
   - a tags folder, to make a snapshot of a specific svn version.
   - a releases folder, that will be linked with Inventree items
-  - and a branch, used for development.
+  - and a branches folder, used for development.
   
-There are two types of files:
-  - Autonomous files, that doesn't depends on others (Part)
-  - Assemblies, that depens on other files in specific repositories
+Files holds two types of Item
+  - Part Item, that doesn't depends on others (Part)
+  - Assemblies Item, that depens on other Items inside the files or from other files
 
 
 ## Release / Tagging
@@ -262,40 +288,35 @@ Releasing, on the other way, is a very specific process.
 
 ### Release in subversion
 
-There are two cases releasing a file. Releasing a file is a substep in releasing an Item. (since an item is contained into a Freecad file)
+There are two cases releasing an Item.
 
-#### For an Autonomous files : 
+#### For an Part Item : 
 
-the release is done in the releases top folder, without any other checks :
-
-example: for a file in:
+For a file in:
 
   > /projects/my-project/trunk/parts/MyPart.FCStd
 
+That hold a FreeCAD Plume Object with item name mypart :
+
 will be released (as of version/rev 1.C)
 
-  > /projects/my-project/releases/parts/MyPart/1.C/MyPart.FCStd
+  > /projects/my-project/releases/parts/MyPart/mypart/1.C/MyPart.FCStd
 
 The path is then split into severals parts:
 
   > src: [rootpath]/trunk/[sub/path]/[filename].extension
 
-  > dst: [rootpath]/releases/[sub/path]/[filename]/[ver.rev]/[filename].extension
+  > dst: [rootpath]/releases/[sub/path]/[filename]/[item_name]/[ver.rev]/[filename].extension
 
 The actual rootpath doesn't matter, it can be projects, libraries, parts, whatever.
 
 
-STEPS:
-- Ask the user the new ver/rev number (major/minor)
+STEPS in releasing, managed by Plume:
+- Check new ver/rev number (major/minor)
 - Check the file is saved and commited (clean state),
 - Check that the file is not already switched
 - Check that the repository is up-to-date
-- Check that there is only one "Plume Item" ("Part") in the File (or, since it is done in FC interface, select the item...)
 - Check the Plume Item is not already released (release path doesn't exists)
-- Update the Plume Item with ver/rev
-  - This is a valid version in the trunk (what does that mean ???)
-- (Generate Related Documents (TechDraw, DXF) from the Properties)
-- and commit (on trunk) (only source file...)
 - svn copy the source file to the release path, with the generated (uncommited) files if svn allows it. (and the config asks for it)
 
 
@@ -307,7 +328,6 @@ The same steps as for a single file will apply, but extra steps are mandatory to
 
 for each sub item : 
   - check the path is switched to a released version
-    - Either it is an internal sub part (living into the assembly folder or its subfolder) or an external part
   - check the Item has the same ver/rev as the release folder
   - svn copy all the related files/link to the release folder
 
@@ -322,35 +342,67 @@ This is done via the svn switch command. It allows to switch from the trunk vers
 
 Commiting a file is prohibited if it is switched, since it is gonna commit on the "release"
    
-### Inventree organization
+
+
+## Export
+
+The export is the last steps to put Item in production.
+
+### Generate Document
+
+From a released Item in the SVN repository, it will generate all the files needed for manufacturing
+
+- STEP file
+- PDFs
+- DXF
+- BOM
+- CNC Jobs
+- etc.
+
+
+### Publish to Inventree
 
 Inventree is the database that store Items and Documents.
+
+When Documents have been checked, the "Publish" command will :
+
+- Commit file under "exports" folder following the same pattern of folder creation as release.
+- Create a new "Part" in Inventree, linking the
+
+
 Each Item would hold informations, such as Version/Revision, and get output files attached. (steps, pdfs, etc)
 It will also hold a link to the subversion release. (source files)
 
-## Version Control
 
 
+## Plume WB Implementation
 
-## Attributes
+A "PlumeObject" is a standard FreeCAD object (Body, Part, Assembly, etc...)
 
+that holds properties
+
+## Property
 
 Item Related
-- UUID : uuid / or InventreeID : Unique, ro
+- PlumeIPN : Unique Internal Part Number, ro
 - Version : Number or string (ro, read from DB/filepath-tag ? or set up at release)
 - Revision : Number or string (ro, ro, read from DB/filepath-tag ? or set up at release)
-- 
+
 - Type : List [MechanicalPart, MechanicalAssembly, OtherItem] (ro, guessed from type ? or not, a MA can be bought and would need to be atomic in the DB)
   - MechanicalPart
   - an MechanicalAssembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
-  - OtherItem: software, stickers, cable, etc..
 
-- Manufactured: Bool, if False, the object is bought
-  - a BoughtPart is bought from a distributor (a screw, a nut, a bearing, etc..) 
-#- Fasteners can be managed as SharedPart... ?(and in the SharedFasteners.FCStd, they are handle as Part, that way they are managed by inventree, but it is not mandatory)
-  - a ManufacturedPart needs steps to build : 3D Prints, CNC, Metal Work, WoodWork, etc..)
-#- It could need "Material", ie plastic, Profiles, etc...
-#- It has documents to describe the Item
+- Manufactured: Bool : made internally
+- Purchased : Bool. a Purchased Part is bought from a distributor (a screw, a nut, a bearing, etc..) 
+
+- Virtual : For part that must be in the BOM but doesn't have physical reality : Software Licence/Version, etc.
+- DatabaseLink : For Part that have a physical reality, but doesn't needs to be released/exported: Fasteners fall into this category.
+
+- StockMaterialIPN : when a Part must be build from raw stock, link to the Inventree IPN Material
+
+  For Panels, Profiles, etc.... 
+
+- StockMaterialQuantity : the Quantity needed to make (unit wise, must fit with unit in Inventree)
 
 DocumentsGenerators
 - ExportedTechDrawPages: the list of related techdraw pages to export
@@ -360,6 +412,3 @@ DocumentsGenerators
 - ExternDoc (for external datasheet, etc : )
 
 
-
-
-## Plumes Tools
