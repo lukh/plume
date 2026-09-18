@@ -226,8 +226,8 @@ class PlumeSvn(object):
     def split_release_path(self, rel_path):
         """
         Split a path (from self.working_copy) to
-        [root_path]/release/[subpath]/[release_name]/[version].[revision]/[filename]
-        :ret : (rootpath, subpath, release_name, version, revision, filename)
+        [root_path]/release/[subpath]/[release_base_name]/[release_obj_name]/[version].[revision]/[filename]
+        :ret : (rootpath, subpath, release_base_name, release_obj_name, version, revision, filename)
         """
         if not self.is_release_path(rel_path):
             raise PlumeSvnException(f"{rel_path} is not in a release")
@@ -238,32 +238,33 @@ class PlumeSvn(object):
         
         filename = ar_split.pop()
         version, revision = ar_split.pop().split(".")
-        release_name = ar_split.pop()
+        release_obj_name = ar_split.pop()
+        release_base_name = ar_split.pop()
 
         if len(ar_split) > 0:
             subpath = os.path.join(*ar_split)
         else:
             subpath = ""
 
-        return (rootpath, subpath, release_name, version, revision, filename)
+        return (rootpath, subpath, release_base_name, release_obj_name, version, revision, filename)
 
 
 
-    def get_release_path(self, rootpath, subpath, release_name, version, revision, filename):
+    def get_release_path(self, rootpath, subpath, release_base_name, release_obj_name, version, revision, filename):
         """
-        get a release path from (rootpath, subpath, release_name, version, revision, filename)
+        get a release path from (rootpath, subpath, release_base_name, release_obj_name, version, revision, filename)
         """
-        p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
+        p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_base_name}{os.sep}{release_obj_name}{os.sep}{version}.{revision}{os.sep}{filename.strip(os.sep)}"
         return os.path.normpath(p)
 
-    def get_releases_available(self, rel_trunk_path, release_name):
+    def get_releases_available(self, rel_trunk_path, release_base_name, release_obj_name):
         """
         get releases availables for a trunk path (file)
         in the form of "version.revision"
         """
         rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
 
-        p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_name}"
+        p = f"{rootpath.strip(os.sep)}{os.sep}releases{os.sep}{subpath.strip(os.sep)}{os.sep}{release_base_name}{os.sep}{release_obj_name}"
         releases_path = self.get_abs_path(os.path.normpath(p))
 
         if not os.path.isdir(releases_path):
@@ -304,7 +305,7 @@ class PlumeSvn(object):
 
         return os.path.relpath(info.url, self.repo_url)
 
-    def switch(self, rel_trunk_path, release_name, version, revision):
+    def switch(self, rel_trunk_path, release_base_name, release_obj_name, version, revision):
         if not self.is_trunk_path(rel_trunk_path):
             raise PlumeSvnException(f"{rel_trunk_path} is not in a trunk")
             
@@ -313,7 +314,7 @@ class PlumeSvn(object):
 
         rootpath, subpath, filename = self.split_trunk_path(rel_trunk_path)
 
-        dest_path = self.get_release_path(rootpath, subpath, release_name, version, revision, filename)
+        dest_path = self.get_release_path(rootpath, subpath, release_base_name, release_obj_name, version, revision, filename)
 
         if not self.is_release_path(dest_path):
             raise PlumeSvnException(f"{dest_path} is not a release")
@@ -475,12 +476,13 @@ class PlumeSvn(object):
             self.local_repo.commit(f"adding {rel_proj_path} structure", rel_filepaths=[rel_proj_path])
 
 
-    def release(self, rootpath, subpath, release_name, version, revision, filepaths=[], commit_msg=None):
+    def release(self, rootpath, subpath, release_base_name, release_obj_name, version, revision, filepaths=[], commit_msg=None):
         """
         Release files or folder (project)
         :root_path : path to root folder (containing trunk, tags, releases and branches)
         :sub_path : sub path (as in split trunk) from root_path to subpaths
-        :release_name : the name of the release
+        :release_base_name : the name of the release
+        :release_obj_name : the name of the release
         :filepaths : a list of filename (from the current trunk / subpath) to be released (file or folder/project)
           or empty list (default) to release the folder (?)
 
@@ -494,7 +496,7 @@ class PlumeSvn(object):
         # if not self.is_path_clean(self.get_trunk_path(rootpath)):
         #     raise PlumeSvnException(f"{rootpath} is not clean")
 
-        release_root_path = self.get_release_path(rootpath, subpath, release_name, version, revision, "")
+        release_root_path = self.get_release_path(rootpath, subpath, release_base_name, release_obj_name, version, revision, "")
         abs_release_root_path = os.path.join(self.working_copy, release_root_path)
         if os.path.isdir(abs_release_root_path):
             raise OSError(f"{rootpath} release dir already exists")
@@ -505,7 +507,7 @@ class PlumeSvn(object):
         # check files are in order : first one is unswitched, others are
         for idx, filename in enumerate(filepaths):
             trunk_path = self.get_trunk_path(rootpath, subpath, filename)
-            release_path = self.get_release_path(rootpath, subpath, release_name, version, revision, filename)
+            release_path = self.get_release_path(rootpath, subpath, release_base_name, release_obj_name, version, revision, filename)
 
             if not os.path.isfile(self.get_abs_path(trunk_path)):
                 raise OSError(f"{trunk_path} doesn't exist")
@@ -541,8 +543,8 @@ class PlumeSvn(object):
         release_root_parent = os.path.split(release_root_path)[0]
         if (not os.path.isdir(os.path.join(self.working_copy, release_root_parent))):
             self.local_repo.mkdir(release_root_parent, parents=True)
-            release_root_top = self.get_release_path(rootpath, subpath.split(os.sep)[0] , "", "", "", "")
-            self.local_repo.commit(f"add release folder for {release_name}", rel_filepaths=[release_root_top])
+            release_root_top = self.get_release_path(rootpath, subpath.split(os.sep)[0] , "", "", "", "", "")
+            self.local_repo.commit(f"add release folder for {release_base_name}/{release_obj_name}", rel_filepaths=[release_root_top])
 
 
         # switched files, and main root file
@@ -562,7 +564,7 @@ class PlumeSvn(object):
         # manifest
         manifest_file = os.path.join(abs_release_root_path, "MANIFEST.md")
         with open(manifest_file, "w") as manifest:
-            manifest.write(f"# {release_name}\n")
+            manifest.write(f"# {release_base_name}/{release_obj_name}\n")
             manifest.write(f"## {version}.{revision}\n")
             manifest.write(f"\n")
             manifest.write(f"Internal Files\n")
@@ -578,7 +580,7 @@ class PlumeSvn(object):
 
 
         if commit_msg is None:
-            commit_msg = f"Release {release_name}:{version}.{revision}"
+            commit_msg = f"Release {release_base_name}/{release_obj_name}:{version}.{revision}"
 
         self.local_repo.commit(commit_msg, rel_filepaths=[release_root_path])
 

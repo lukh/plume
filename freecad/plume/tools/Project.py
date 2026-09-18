@@ -110,10 +110,10 @@ class SwitchCommand(CommonCommand):
 
             abs_root_path = root.Document.FileName
             rel_root_path = svn.get_rel_path(abs_root_path)
-            release_name = self.get_release_name(root)
+            (release_base_name, release_obj_name) = self.get_release_basename_and_label(root)
 
             _, _, filename = svn.split_trunk_path(rel_root_path)
-            releases = svn.get_releases_available(rel_root_path, release_name)
+            releases = svn.get_releases_available(rel_root_path, release_base_name, release_obj_name)
 
             release, ok = QInputDialog.getItem(None, "Choose a release", f"release for file {rel_root_path}", releases)
             if ok:
@@ -127,8 +127,8 @@ class SwitchCommand(CommonCommand):
                     if not svn.is_path_external(rp):
                         if not svn.is_path_switched(rp):
                             try:
-                                svn.switch(rp, release_name, version, revision) 
-                                self.log(f"Switch {rp} to {release_name}/{version}.{revision}")
+                                svn.switch(rp, release_base_name, release_obj_name, version, revision) 
+                                self.log(f"Switch {rp} to {release_base_name}/{release_obj_name}/{version}.{revision}")
                             except OSError as e:
                                 self.log(f"Can't switch {rp} : {str(e)}")
                         else:
@@ -388,7 +388,7 @@ class ReleaseCommand(CommonCommand):
         related_paths = [ap for ap in self.get_related_paths(root) if ap != abs_root_path]
 
         rootpath, subpath, filename = svn.split_trunk_path(svn.get_rel_path(rel_root_path))
-        release_name = self.get_release_name(root)
+        (release_base_name, release_obj_name) = self.get_release_basename_and_label(root)
 
 
         for p in related_paths:
@@ -433,7 +433,7 @@ class ReleaseCommand(CommonCommand):
 
         if release_ok:
             if QMessageBox.question(None, "Confirm release", f'Do you want to release these files ? ...\n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}') == QMessageBox.StandardButton.Yes:
-                svn.release(rootpath, subpath, release_name, version, revision, filepaths=filepaths)
+                svn.release(rootpath, subpath, release_base_name, release_obj_name, version, revision, filepaths=filepaths)
 
                 QMessageBox.information(None, "Release ok", f'released : \n{"\n".join([svn.get_trunk_path(rootpath, subpath, sp) for sp in filepaths])}')
 

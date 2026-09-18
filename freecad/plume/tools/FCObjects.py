@@ -339,8 +339,7 @@ class BuildExportedFilesCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
         root_obj = sel[0]
 
-        abs_root_path = root_obj.Document.FileName
-        dest = self.get_export_dir(abs_root_path)
+        dest = self.get_export_dir(root_obj)
         if dest is None:
             self.log('no dest for export !')
             return
@@ -348,12 +347,25 @@ class BuildExportedFilesCommand(CommonCommand):
 
         # prepare folder
         dest_root_dir = os.path.split(dest)[0]
-        if not os.path.isdir(dest_root_dir):
+        if not os.path.isdir(dest_root_dir): # need to create and commit the dest_root_dir
+            # find the first existing (in svn !) 
+            # dest_root_dir = [WC]]/[rootpath]/[exports]/[subpath][release_base_name]/[release_obj_name]/[ipn]/[ver.rev]
+            # dest_root_dir = [WC]]/[svn_export_rootfolder][rootpath]/[subpath][release_base_name]/[release_obj_name]/[ipn]/[ver.rev]
             os.makedirs(dest_root_dir, exist_ok=True)
-            svn.add(dest_root_dir)
-            svn.commit(f"Add export folder {dest_root_dir}", [dest_root_dir])
 
-        os.makedirs(dest, exist_ok=False) # force housekeeping, should be handled in a better way (TODO)
+            parts = svn.get_rel_path(dest_root_dir).strip(os.sep).split(os.sep)
+            for i in range(1, len(parts) + 1):
+                p = f"{os.sep}".join(parts[:i])
+                if svn.path_status(p, depth="empty").type_raw_name == "unversioned":
+                    svn.add(p)
+                    svn.commit(f"Add export folder {svn.get_rel_path(dest_root_dir)}", [p])
+                    break
+
+            else:
+                App.Console.PrintError(f"Can't add : {dest_root_dir}\n")
+
+
+        os.makedirs(dest, exist_ok=False) # force housekeeping, exists should be handled in a better way (TODO)
 
 
         # main shape
@@ -396,7 +408,7 @@ class BuildExportedFilesCommand(CommonCommand):
                         case 'ExportedCNCJobs':
                             pass # TODO...
 
-        # TODO : BOM, CSV ?
+        # TODO : BOM, CSV, and.. MANIFEST ?
 
         # Thumbnail 
         create_thumbnail(root_obj.Document.FileName, dest)
@@ -465,8 +477,7 @@ class PublishPartCommand(CommonCommand):
         sel = Gui.Selection.getSelection()
         root_obj = sel[0]
 
-        abs_root_path = root_obj.Document.FileName
-        dest = self.get_export_dir(abs_root_path)
+        dest = self.get_export_dir(root_obj)
         if dest is None:
             self.log('no dest for export !')
             return

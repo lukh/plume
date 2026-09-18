@@ -30,6 +30,18 @@ class CommonCommand:
     def log(self, msg):
         App.Console.PrintMessage(f'Plume : {msg}\n')
 
+    def get_release_basename_and_label(self, obj):
+        """
+        return a standard release name from freecad obj
+        """
+        release_base_name = os.path.splitext(os.path.split(obj.Document.FileName)[1])[0]
+        release_obj_name = obj.Label
+
+        return (release_base_name, release_obj_name)
+
+
+
+
     def get_files_from_objects(self):
         sel = Gui.Selection.getSelection()
         paths = [obj.Document.FileName for obj in sel]
@@ -133,26 +145,29 @@ class CommonCommand:
 
         return data
 
-    def get_export_dir(self, abs_root_path):
+    def get_export_dir(self, obj):
         """
         get export dir from filename (in release)
         """
         svn = self.svn()
         repo_config = self.config()
 
+        abs_root_path = obj.Document.FileName
+        ipn = obj.PlumeIPN
+
         rel_path = svn.get_rel_path(abs_root_path)
         if not svn.is_release_path(rel_path):
             raise PlumeSvnException(f'{abs_root_path} is not a release path')
 
 
-        (rootpath, subpath, release_name, version, revision, filename) = svn.split_release_path(rel_path)
+        (rootpath, subpath, release_base_name, release_obj_name, version, revision, filename) = svn.split_release_path(rel_path)
 
         dest = None
         if repo_config['svn_export_mode'] == "subfolder":
-            dest = os.path.join(svn.working_copy, rootpath, repo_config["svn_export_subfolder"], subpath, release_name, f'{version}.{revision}')
+            dest = os.path.join(svn.working_copy, rootpath, repo_config["svn_export_subfolder"], subpath, release_base_name, release_obj_name, ipn, f'{version}.{revision}')
 
         else:
-            dest = os.path.join(svn.working_copy, repo_config["svn_export_rootfolder"], rootpath, subpath, release_name, f'{version}.{revision}')
+            dest = os.path.join(svn.working_copy, repo_config["svn_export_rootfolder"], rootpath, subpath, release_base_name, release_obj_name, ipn, f'{version}.{revision}')
 
         return dest
 
