@@ -101,17 +101,14 @@ def get_fastener_name(obj):
     
 
 def get_ipn_suggestion(obj):
-    try:
-        path = obj.Document.FileName
-        rootpath, subpath = path.split("/trunk/")
-        _, project = os.path.split(rootpath)
-        (subpath, filename) = os.path.split(subpath)
+    path = obj.Document.FileName
+    rootpath, subpath = path.split("/trunk/")
+    _, project = os.path.split(rootpath)
+    (subpath, filename) = os.path.split(subpath)
+    label = obj.Label
 
 
-        subname = "_".join([sp[:4].upper() for sp in subpath.split(os.sep)])
-        filename, _ = os.path.splitext(filename)
+    subpath = "_".join([sp[:4].upper() for sp in subpath.split(os.sep)])
+    filename, _ = os.path.splitext(filename)
 
-        return f"{project[:6].upper()}_{subname}_{filename[5:].upper()}"
-
-    except:
-        return ""
+    return f"{project[:4].upper()}_{subpath}{'_' if subpath != '' else ''}{filename[:4].upper()}_{label.upper()}"
