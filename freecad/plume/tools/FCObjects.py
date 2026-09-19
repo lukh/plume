@@ -129,7 +129,7 @@ class InitializePlumeObjectCommand(CommonCommand):
             obj.PlVersion = "#"
             obj.PlRevision = "#"
 
-
+        # TODO SHould we keep that ?
         obj.addProperty(
             "App::PropertyEnumeration",
             "PlType",
