@@ -11,6 +11,7 @@ dependencies = [
     "pyqt6 (>=6.11.0,<7.0.0)",
     "freecad-stubs (>=1.0.21,<2.0.0)",
     "inventree (>=0.23.2,<0.24.0)",
+    "python-dateutil (>=2.9.0.post0,<3.0.0)",
 ]
 
 [tool.poetry]
