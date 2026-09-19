@@ -439,9 +439,17 @@ class MainWidget(QWidget, CommonCommand):
             curr_wc = param.GetString("CurrentWorkingCopy")
             if curr_wc:
                 index = self.workingcopies_combobox.findText(curr_wc)
-                if curr_wc != -1:
+                if index != -1:
+                    print("opening", curr_wc)
                     self.workingcopies_combobox.setCurrentIndex(index)
                     self.setRootDir(curr_wc)
+                else:
+                    print("cant't find", curr_wc)
+
+                # TODO ! Handles correctly in case CurrentWorkingCopy doesn't exist on FS.
+                # It will crash if it doesn't.
+                # (it crashes if "can't find curr_wc")
+
 
         menu_layout = QHBoxLayout()
         menu_layout.addWidget(self.workingcopies_combobox)
