@@ -388,9 +388,14 @@ Item Related
 - Version : Number or string (ro, read from DB/filepath-tag ? or set up at release)
 - Revision : Number or string (ro, ro, read from DB/filepath-tag ? or set up at release)
 
-- Type : List [MechanicalPart, MechanicalAssembly, OtherItem] (ro, guessed from type ? or not, a MA can be bought and would need to be atomic in the DB)
+- Type : List [MechanicalPart, MechanicalAssembly, FrameAssembly/FixAssembly, StockMaterial, OtherItem] (ro, guessed from type ? or not, a MA can be bought and would need to be atomic in the DB)
   - MechanicalPart
   - an MechanicalAssembly is, well, an assembly -> it groups Parts and Manufactured Parts, and/or sub assemblies
+  - FrameAssembly/FixAssembly : something currently being defined. A Part/CustomContainer. not sure if it can be merged with MechanicalAssembly
+  - StockMaterial : 
+    - the Item need StockMaterial / OR - TBD / 
+    - IS Stock Material; its PlumeIPN links to the Raw Stock Material ???
+    MAYBE : When StockMaterial : If has StockMaterialIPN, create an Intermediate Item (StockMaterial), if not, use PlumeIPN as the StockMaterial pk, and link to the parent Item
 
 - Manufactured: Bool : made internally
 - Purchased : Bool. a Purchased Part is bought from a distributor (a screw, a nut, a bearing, etc..) 
@@ -399,10 +404,10 @@ Item Related
 - DatabaseLink : For Part that have a physical reality, but doesn't needs to be released/exported: Fasteners fall into this category.
 
 - StockMaterialIPN : when a Part must be build from raw stock, link to the Inventree IPN Material
+- (StockMaterial)Quantity : the Quantity needed to make (unit wise, must fit with unit in Inventree)
 
   For Panels, Profiles, etc.... 
 
-- StockMaterialQuantity : the Quantity needed to make (unit wise, must fit with unit in Inventree)
 
 DocumentsGenerators
 - ExportedTechDrawPages: the list of related techdraw pages to export
