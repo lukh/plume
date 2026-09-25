@@ -175,6 +175,9 @@ class PlumeSvn(object):
 
         return self.repo_url + "/" + rp
 
+    def get_rel_path_from_url(self, url):
+        return os.path.relpath(url, start=self.repo_url).lstrip('/')
+
     def is_trunk_path(self, rel_path):
         """
         Check if the existing file is in a trunk
@@ -355,11 +358,11 @@ class PlumeSvn(object):
     def get_externals(self, rel_root_path):
         """
         returns externals of a root path in the form
-        {dest:url, ...}
+        {dest:(url, revision), ...}
         dest from trunk
         """
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
-        if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
+        if not os.path.exists(os.path.join(self.working_copy, rel_root_path)):
             raise OSError(f"{rel_trunk_path} doesn't exist")
 
         props = self.local_repo.properties(rel_trunk_path)
@@ -368,7 +371,11 @@ class PlumeSvn(object):
             ed = ext.split()
             if len(ed) == 2:
                 url, dest = ed
-                externals[dest] = url
+                externals[dest] = (url, "HEAD")
+            if len(ed) == 3:
+                rev, url, dest = ed
+                externals[dest] = (url, rev.replace('-r', ''))
+                
             elif len(ed) == 0:
                 print("empty svn:externals ?")
             else:
@@ -379,16 +386,37 @@ class PlumeSvn(object):
 
     def set_externals(self, rel_root_path, externals, commit_msg=None):
         """
-        param externals: {dest:url, ...}
+        param externals: {dest:(url, revision), ...}
+            revision: 'HEAD', revision_number<int>, 'CURRENT'
+                HEAD : set to follow HEAD revision
+                revision_number : a specific revision number
+                CURRENT: get the current revision number and set it
         """
         rel_trunk_path = os.path.join(rel_root_path, "trunk")
         if not os.path.exists(os.path.join(self.working_copy, rel_trunk_path)):
             raise OSError(f"{rel_trunk_path} doesn't exist")
 
+        ext_content = ''
+        for e in externals:
+            url, rev = externals[e]
+            if rev == 'CURRENT':
+                rev_number = self.local_repo.common_info(self.get_rel_path_from_url(url))['entry_revision']
+
+            elif rev == 'HEAD':
+                rev_number = ""
+
+            else:
+                rev_number = rev
+
+            if rev_number:
+                ext_content += f" -r{rev_number} "
+
+            ext_content += f"{url} {e}\n"
+
         self.local_repo.set_properties(
             rel_trunk_path , 
             "svn:externals", 
-            "\n".join([f"{externals[des]} {des}" for des in externals])
+            ext_content
         )
 
         if commit_msg is None:
@@ -414,34 +442,21 @@ class PlumeSvn(object):
             os.makedirs(dest_dir)
             self.local_repo.add(dest_dir)
 
+        externals = self.get_externals(rel_root_path)
 
-        externals_files = []
         for rtp in rel_targets_path:
             if not self.is_release_path(rtp):
                 raise PlumeSvnException(f"{rtp} not in a release path")
             if self.is_path_switched(rtp):
                 raise PlumeSvnException(f"{rtp} is switched")
 
-            externals_files.append(
-                (
-                    self.get_url(rtp), 
-                    os.path.join(dest_sub_dir, os.path.split(rtp)[1])
-                )
-            )
+            externals[os.path.join(dest_sub_dir, os.path.split(rtp)[1])] = (self.get_url(rtp), 'CURRENT')
 
-        existing_props = self.local_repo.properties(rel_trunk_path)
-        existings_externals = existing_props.get("svn:externals", "")
-        self.local_repo.set_properties(
-            rel_trunk_path , 
-            "svn:externals", 
-            existings_externals + "\n".join([" ".join(ef) for ef in externals_files])
-        )
 
         if commit_msg is None:
             commit_msg = f"Add externals to {rel_root_path}"
 
-        self.local_repo.commit(commit_msg, rel_filepaths=[rel_trunk_path])
-        self.local_repo.update([rel_trunk_path])
+        self.set_externals(rel_root_path, externals=externals, commit_msg=commit_msg)
 
 
     def initialize_repo():
