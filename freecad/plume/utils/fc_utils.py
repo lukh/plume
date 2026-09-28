@@ -8,6 +8,8 @@ import zipfile
 from PySide.QtWidgets import QInputDialog
 import FreeCAD as App
 
+from freecad.plume.fctk import utils as fctk_utils
+
 def prepare_folder_for_export(start_path):
     """
     return a list of temp files, renamed for inventree export
@@ -83,22 +85,8 @@ def write_repo_config(wc, data):
         json.dump(data, fd, indent=4)
 
 
-
-def is_fastener(obj):
-    return hasattr(obj, "Invert") and hasattr(obj, "Type") and obj.Type !=""
-
-def get_fastener_name(obj):
-    if not is_fastener(obj):
-        return "Unknown"
-
-    fastener_type = obj.Type
-    dia = getattr(obj, "Diameter", "")
-    material = getattr(obj, "Material", "")
-    length = getattr(obj, 'Length', '') if getattr(obj, 'Length', '') != "Custom" else str(getattr(obj, 'LengthCustom', '')).replace(" mm", "")
-    name = ''.join([char for char in obj.Name if not char.isdigit()])
-
-    return f"{name}_{fastener_type}_{dia}_{length}_{material}"
-    
+is_fastener = fctk_utils.is_fastener
+get_fastener_name = fctk_utils.get_fastener_name
 
 def get_ipn_suggestion(obj):
     path = obj.Document.FileName

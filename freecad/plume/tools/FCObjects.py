@@ -233,6 +233,13 @@ class InitializePlumeObjectCommand(CommonCommand):
 
         obj.addProperty(
             "App::PropertyString",
+            "PlumeID",
+            "Plume",
+            "Plume reference ID",
+        ).PlumeID = ""
+
+        obj.addProperty(
+            "App::PropertyString",
             "PlumeIPN",
             "Plume",
             "Plume/Inventree Internal Part Number",
