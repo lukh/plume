@@ -115,6 +115,20 @@ class InitializePlumeObjectCommand(CommonCommand):
 
         obj.addProperty(
             "App::PropertyString",
+            "PlKeywords",
+            "Plume",
+            "Part keywords to improve visibility in search results",
+        ).PlKeywords = ""
+
+        obj.addProperty(
+            "App::PropertyStringList",
+            "PlTags",
+            "Plume",
+            "Tags",
+        ).PlTags = []
+
+        obj.addProperty(
+            "App::PropertyString",
             "PlVersion",
             "Plume",
             "Version",
@@ -320,18 +334,13 @@ class BuildExportedFilesCommand(CommonCommand):
         return True
 
     def Activated(self):
-        def recursive_scan(group, path=""):
-            if path == "":
-                path = group.Label
-
-            if group.TypeId == 'App::DocumentObjectGroup':
-                for obj in group.Group:
-                    if obj.TypeId == 'App::DocumentObjectGroup':
-                        yield from recursive_scan(obj, path=path + "/" + obj.Label)
+        def recursive_scan(obj, path=""):
+            if obj.TypeId == 'App::DocumentObjectGroup':
+                for o in obj.Group:
+                    yield from recursive_scan(o, path=path + "/" + obj.Label)
                     
-                    else:
-                        print(" - ", path, obj.Label)
-                        yield (path, obj)
+            else:
+                yield (path, obj)
             
 
         svn = self.svn()
@@ -373,7 +382,10 @@ class BuildExportedFilesCommand(CommonCommand):
 
         # exported objects (plans, etc)
         categories = ['ExportedSteps', 'ExportedTechDrawPages', 'ExportedDXFs', 'ExportedCNCJobs']
+        
+        # browse lists of NAMES in the categories 
         for exp_objects, cat in [(getattr(root_obj, c), c)for c in categories]:
+            # exp_objects : "name1", "name2"
             for eo_name in exp_objects:
                 eo = root_obj.Document.getObject(eo_name)
                 for (subpath, obj) in recursive_scan(eo):
