@@ -488,6 +488,8 @@ class PublishPartCommand(CommonCommand):
 
         sel = Gui.Selection.getSelection()
         root_obj = sel[0]
+        root_path = root_obj.Document.FileName
+
 
         dest = self.get_export_dir(root_obj)
         if dest is None:
@@ -600,7 +602,9 @@ class PublishPartCommand(CommonCommand):
             virtual=root_obj.PlVirtual,
             attachment_folder=dest if ((not root_obj.PlDatabaseLink) and repo_config['export_in_inventree']) else None,
             category_path=category_path,
-            bom=bom
+            bom=bom,
+            link=svn.get_url(root_path),
+            tags=getattr(root_obj, "PlTags", []), keywords=getattr(root_obj, "PlKeywords", "")
         )
 
 Gui.addCommand("Plume_InitializeObject", InitializePlumeObjectCommand())
