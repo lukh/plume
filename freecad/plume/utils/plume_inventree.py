@@ -46,7 +46,9 @@ class PlumeInventree(object):
         attachment_folder = None,
         category_path = None,
         units = None,
-        bom = None
+        bom = None, 
+        link = None,
+        tags = None, keywords = None
     ):
         data = {
             "IPN":ipn,
@@ -60,8 +62,16 @@ class PlumeInventree(object):
             "virtual":virtual
         }
 
+        if link is not None:
+            data['link'] = link
+
         if units is not None:
             data['units'] = units
+
+        if tags is not None:
+            data['tags'] = tags
+        if keywords is not None:
+                    data['keywords'] = keywords
 
         # get the category
         if category_path is not None:
